@@ -14,6 +14,10 @@ A limited set of vanilla and Biomes O' Plenty item stacks is assigned material d
 
 GT6's item material data may register recycling information. This is desirable: objects should be recoverable as their constituent materials through appropriate GregTech machinery. Composition and recoverable output must be validated separately, however, to account for moisture, processing losses, and machine-specific behavior. Never promise exact recovery solely from a composition tooltip.
 
+## Build toolchain target
+
+Target **Gradle 8.x** with a modern legacy-Minecraft build plugin compatible with Forge 1.7.10. Do **not** use original ForgeGradle 1.x directly with Gradle 8; verify the chosen plugin and its Java 8 bytecode output before committing a wrapper or claiming a successful build. The Gradle runtime JDK and Minecraft target JDK may differ.
+
 ## Build and validation status
 
 **Experimental source; not compiled or tested.** A reproducible Forge 1.7.10-10.13.4.1614 Gradle environment and GT6 6.17.06 dependency still need to be established. Material IDs, actual GT6 API compatibility, mod registry names, and registration timing must be checked.
