@@ -47,9 +47,9 @@ public final class GT6MaterialExpansion {
 
     @EventHandler
     public void postInit(FMLPostInitializationEvent event) {
-        // Explicit balance adjustment: cooking retains approximately 75% of raw meat mass.
-        // Change only mass; do not make raw meat a chemical component of cooked meat.
-        MT.MeatCooked.mMass = Math.round(MT.MeatRaw.mMass * 0.75D);
+        // GT6 item weight is based on density, not the molecular mMass statistic.
+        // Cooking retains 75% of raw meat weight without changing components or recipes.
+        MT.MeatCooked.setDensity(MT.MeatRaw.mGramPerCubicCentimeter * 0.75D);
 
         // Deliberately conservative: only unannotated item stacks receive data.
         // Do not replace GT6's existing item material assignments.
