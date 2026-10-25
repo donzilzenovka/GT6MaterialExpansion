@@ -49,45 +49,24 @@ public final class GT6MaterialExpansion {
         ChickenRaw.setLocal("Raw Chicken");
         ChickenRaw.setRGBa(255, 185, 193, 255);
         // GT6 food mortar recipes inspect the MEAT material tag, not merely ore names.
-        ChickenRaw.put(TD.Properties.MEAT);
+        ChickenRaw.put(TD.Properties.MEAT, TD.Properties.FOOD,
+            TD.Processing.MORTAR, TD.ItemGenerator.INGOTS,
+            TD.Processing.MELTING, TD.Processing.EXTRUDER,
+            TD.Processing.EXTRUDER_SIMPLE);
         // Shredder recycling follows the pulverisation target of each constituent.
         ChickenRaw.setPulver(ChickenRaw, U);
         // Let GT6 generate processing recipes from species-specific targets.
         ChickenRaw.setSmelting(ChickenCooked, U);
         ChickenRaw.setForging(ChickenCooked, U);
-        // GT6 PrefixItem.run() registers only materials passing isGeneratingItem().
-        // Force all four dust fractions before GT6's Init-phase registration pass.
-        OP.dust.forceItemGeneration(ChickenRaw);
-        OP.dustSmall.forceItemGeneration(ChickenRaw);
-        OP.dustTiny.forceItemGeneration(ChickenRaw);
-        OP.dustDiv72.forceItemGeneration(ChickenRaw);
-        // Match the cooked chicken form family; let GT6 handle any applicable recipes.
-        OP.nugget.forceItemGeneration(ChickenRaw);
-        OP.chunkGt.forceItemGeneration(ChickenRaw);
-        OP.billet.forceItemGeneration(ChickenRaw);
-        OP.ingot.forceItemGeneration(ChickenRaw);
-        OP.blockIngot.forceItemGeneration(ChickenRaw);
-        // Register equivalent GT6 material forms under the generic raw-meat name.
-        ChickenRaw.addReRegistrations(MT.MeatRaw);
-
         // Preserve species identity while inheriting GT6's generic cooked-meat recipes.
         ChickenCooked.setDensity(MT.MeatRaw.mGramPerCubicCentimeter * 0.75D);
         ChickenCooked.setLocal("Cooked Chicken");
         ChickenCooked.setRGBa(190, 130, 83, 255);
-        ChickenCooked.put(TD.Properties.MEAT);
+        ChickenCooked.put(TD.Properties.MEAT, TD.Properties.FOOD,
+            TD.Processing.MORTAR, TD.ItemGenerator.INGOTS,
+            TD.Processing.MELTING, TD.Processing.EXTRUDER,
+            TD.Processing.EXTRUDER_SIMPLE);
         ChickenCooked.setPulver(ChickenCooked, U);
-        OP.dust.forceItemGeneration(ChickenCooked);
-        OP.dustSmall.forceItemGeneration(ChickenCooked);
-        OP.dustTiny.forceItemGeneration(ChickenCooked);
-        OP.dustDiv72.forceItemGeneration(ChickenCooked);
-        // Let GT6's prefix system generate the existing cooked-meat form family.
-        OP.nugget.forceItemGeneration(ChickenCooked);
-        OP.chunkGt.forceItemGeneration(ChickenCooked);
-        OP.billet.forceItemGeneration(ChickenCooked);
-        OP.ingot.forceItemGeneration(ChickenCooked);
-        OP.blockIngot.forceItemGeneration(ChickenCooked);
-        ChickenCooked.addReRegistrations(MT.MeatCooked);
-
         // Soil uses GT6 constituent masses, never a hardcoded kilogram value.
         // Nine-part ratio: 6 Stone, 2 Biomass, 1 Water.
         Soil.setMoleculeConfiguration(new OreDictConfigurationComponent(9,
