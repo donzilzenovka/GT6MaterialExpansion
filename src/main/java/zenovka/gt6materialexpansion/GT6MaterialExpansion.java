@@ -73,6 +73,12 @@ public final class GT6MaterialExpansion {
         OP.dustSmall.forceItemGeneration(ChickenCooked);
         OP.dustTiny.forceItemGeneration(ChickenCooked);
         OP.dustDiv72.forceItemGeneration(ChickenCooked);
+        // Let GT6's prefix system generate the existing cooked-meat form family.
+        OP.nugget.forceItemGeneration(ChickenCooked);
+        OP.chunkGt.forceItemGeneration(ChickenCooked);
+        OP.billet.forceItemGeneration(ChickenCooked);
+        OP.ingot.forceItemGeneration(ChickenCooked);
+        OP.blockIngot.forceItemGeneration(ChickenCooked);
         ChickenCooked.addReRegistrations(MT.MeatCooked);
 
         // Soil uses GT6 constituent masses, never a hardcoded kilogram value.
@@ -195,6 +201,7 @@ public final class GT6MaterialExpansion {
         assignIfMissing("BiomesOPlenty:mud", 0, Soil, 9 * U);
         // Additional item associations will follow after pack-specific verification.
         testChickenOverride();
+        testCookedChickenOverride();
         diagnoseChickenProcessing();
         // Mortar recipes may be populated by GT6 after postInit.
         // Keep the early diagnostics, but defer any recipe mutation.
@@ -223,6 +230,24 @@ public final class GT6MaterialExpansion {
         if (!accepted) {
             FMLLog.info("[GT6MaterialExpansion] Chicken override refused by GT6; no forced mutation attempted");
         }
+    }
+
+    /** Mirror raw chicken's GT6 material amount, preserving the existing cooked item. */
+    private static void testCookedChickenOverride() {
+        Object registered = Item.itemRegistry.getObject("minecraft:cooked_chicken");
+        if (!(registered instanceof Item)) {
+            FMLLog.info("[GT6MaterialExpansion] Cooked chicken override: vanilla item missing");
+            return;
+        }
+        ItemStack chicken = new ItemStack((Item) registered, 1, 0);
+        OreDictItemData before = OreDictManager.INSTANCE.getItemData(chicken);
+        FMLLog.info("[GT6MaterialExpansion] Cooked chicken override: before=%s",
+            describeMaterial(before));
+        boolean accepted = OreDictManager.INSTANCE.setItemData(
+            chicken, new OreDictItemData(ChickenCooked, 2 * U));
+        OreDictItemData after = OreDictManager.INSTANCE.getItemData(chicken);
+        FMLLog.info("[GT6MaterialExpansion] Cooked chicken override: accepted=%s, after=%s",
+            accepted, describeMaterial(after));
     }
 
     @EventHandler
