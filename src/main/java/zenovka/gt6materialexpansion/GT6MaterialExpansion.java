@@ -6,6 +6,7 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import gregapi.data.CS;
 import gregapi.data.MT;
+import gregapi.data.OP;
 import gregapi.util.OM;
 import gregapi.data.TD;
 import gregapi.oredict.OreDictMaterial;
@@ -45,6 +46,12 @@ public final class GT6MaterialExpansion {
         ChickenRaw.put(TD.Properties.MEAT);
         // Shredder recycling follows the pulverisation target of each constituent.
         ChickenRaw.setPulver(ChickenRaw, U);
+        // GT6 PrefixItem.run() registers only materials passing isGeneratingItem().
+        // Force all four dust fractions before GT6's Init-phase registration pass.
+        OP.dust.forceItemGeneration(ChickenRaw);
+        OP.dustSmall.forceItemGeneration(ChickenRaw);
+        OP.dustTiny.forceItemGeneration(ChickenRaw);
+        OP.dustDiv72.forceItemGeneration(ChickenRaw);
         // Register equivalent GT6 material forms under the generic raw-meat name.
         ChickenRaw.addReRegistrations(MT.MeatRaw);
 
