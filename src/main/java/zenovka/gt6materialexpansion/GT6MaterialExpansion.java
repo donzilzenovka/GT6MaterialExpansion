@@ -13,6 +13,7 @@ import gregapi.oredict.OreDictManager;
 import gregapi.oredict.configurations.OreDictConfigurationComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import cpw.mods.fml.common.FMLLog;
 
 /**
  * Initial GT6 6.17.06 material-data experiment.
@@ -26,11 +27,15 @@ public final class GT6MaterialExpansion {
     // IDs are in GT6's custom-material range; check for pack conflicts before release.
     public static OreDictMaterial LOAM;
     public static OreDictMaterial SOIL;
+    public static OreDictMaterial RAW_CHICKEN;
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         LOAM = OreDictMaterial.createMaterial(32011, "Loam", "Loam");
         SOIL = OreDictMaterial.createMaterial(32013, "Soil", "Soil");
+        RAW_CHICKEN = OreDictMaterial.createMaterial(32014, "RawChicken", "Raw Chicken");
+        // Test material: inherit raw meat density; no recipes or processing registered.
+        RAW_CHICKEN.setDensity(MT.MeatRaw.mGramPerCubicCentimeter);
 
         // Soil uses GT6 constituent masses, never a hardcoded kilogram value.
         // Nine-part ratio: 6 Stone, 2 Biomass, 1 Water.
@@ -151,6 +156,36 @@ public final class GT6MaterialExpansion {
         assignIfMissing("BiomesOPlenty:newBopGrass", 0, LOAM, 9 * U);
         assignIfMissing("BiomesOPlenty:mud", 0, SOIL, 9 * U);
         // Additional item associations will follow after pack-specific verification.
+        testChickenOverride();
+    }
+
+    /** Diagnostic only: use GT6's public API; do not bypass protected associations. */
+    private static void testChickenOverride() {
+        Object registered = Item.itemRegistry.getObject("minecraft:chicken");
+        if (!(registered instanceof Item)) {
+            FMLLog.info("[GT6MaterialExpansion] Chicken override test: vanilla item missing");
+            return;
+        }
+        ItemStack chicken = new ItemStack((Item) registered, 1, 0);
+        OreDictItemData before = OreDictManager.INSTANCE.getItemData(chicken);
+        FMLLog.info("[GT6MaterialExpansion] Chicken override: before=%s",
+            describeMaterial(before));
+        // Preserve the original GT6 amount, if present, to isolate association behaviour.
+        long amount = before != null && before.mMaterial != null
+            ? before.mMaterial.mAmount : U;
+        boolean accepted = OreDictManager.INSTANCE.setItemData(
+            chicken, new OreDictItemData(RAW_CHICKEN, amount));
+        OreDictItemData after = OreDictManager.INSTANCE.getItemData(chicken);
+        FMLLog.info("[GT6MaterialExpansion] Chicken override: accepted=%s, after=%s",
+            accepted, describeMaterial(after));
+        if (!accepted) {
+            FMLLog.info("[GT6MaterialExpansion] Chicken override refused by GT6; no forced mutation attempted");
+        }
+    }
+
+    private static String describeMaterial(OreDictItemData data) {
+        if (data == null || data.mMaterial == null) return "<none>";
+        return String.valueOf(data.mMaterial.mMaterial) + " (" + data.mMaterial.mAmount + " units)";
     }
 
     private static void assignIfMissing(String registryName, int metadata,
