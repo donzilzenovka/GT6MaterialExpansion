@@ -6,6 +6,7 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import gregapi.data.CS;
 import gregapi.data.MT;
+import gregapi.data.TD;
 import gregapi.oredict.OreDictMaterial;
 import gregapi.oredict.OreDictMaterialStack;
 import gregapi.oredict.OreDictItemData;
@@ -36,6 +37,10 @@ public final class GT6MaterialExpansion {
         RAW_CHICKEN = OreDictMaterial.createMaterial(32014, "ChickenRaw", "Raw Chicken");
         // Test material: inherit raw meat density; no recipes or processing registered.
         RAW_CHICKEN.setDensity(MT.MeatRaw.mGramPerCubicCentimeter);
+        // GT6 food mortar recipes inspect the MEAT material tag, not merely ore names.
+        RAW_CHICKEN.put(TD.Properties.MEAT);
+        // Register equivalent GT6 material forms under the generic raw-meat name.
+        RAW_CHICKEN.addReRegistrations(MT.MeatRaw);
 
         // Soil uses GT6 constituent masses, never a hardcoded kilogram value.
         // Nine-part ratio: 6 Stone, 2 Biomass, 1 Water.
