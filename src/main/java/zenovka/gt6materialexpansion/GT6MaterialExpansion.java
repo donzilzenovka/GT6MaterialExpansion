@@ -20,8 +20,6 @@ import gregapi.oredict.OreDictManager;
 import gregapi.oredict.configurations.OreDictConfigurationComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.crafting.FurnaceRecipes;
-import java.util.Map;
 import cpw.mods.fml.common.FMLLog;
 
 /**
@@ -54,6 +52,9 @@ public final class GT6MaterialExpansion {
         ChickenRaw.put(TD.Properties.MEAT);
         // Shredder recycling follows the pulverisation target of each constituent.
         ChickenRaw.setPulver(ChickenRaw, U);
+        // Let GT6 generate processing recipes from species-specific targets.
+        ChickenRaw.setSmelting(ChickenCooked, U);
+        ChickenRaw.setForging(ChickenCooked, U);
         // GT6 PrefixItem.run() registers only materials passing isGeneratingItem().
         // Force all four dust fractions before GT6's Init-phase registration pass.
         OP.dust.forceItemGeneration(ChickenRaw);
@@ -260,7 +261,6 @@ public final class GT6MaterialExpansion {
     public void serverStarted(FMLServerStartedEvent event) {
         FMLLog.info("[GT6MaterialExpansion] Chicken mortar: checking after server startup");
         overrideChickenMortarOutput();
-        overrideChickenSmeltingOutput();
     }
 
     /** Change only the already-registered vanilla chicken mortar output. */
@@ -319,55 +319,6 @@ public final class GT6MaterialExpansion {
         // GT6 Recipe explicitly permits output-array changes without reindexing inputs.
         candidate.mOutputs[0] = specific;
         FMLLog.info("[GT6MaterialExpansion] Chicken mortar: replaced generic output with %s", describeStack(specific));
-    }
-
-    /**
-     * Keep GT6's ore-dictionary generated furnace recipe and replace only its
-     * result. Avoid registering a competing furnace recipe or changing input data.
-     */
-    private static void overrideChickenSmeltingOutput() {
-        ItemStack raw = OM.dust(ChickenRaw, U);
-        ItemStack generic = OM.dust(MT.MeatCooked, U);
-        ItemStack cooked = OM.dust(ChickenCooked, U);
-        if (raw == null || generic == null || cooked == null) {
-            FMLLog.info("[GT6MaterialExpansion] Chicken smelting: dust form unavailable; unchanged");
-            return;
-        }
-        int matches = 0;
-        int alreadySpecific = 0;
-        ItemStack candidateInput = null;
-        for (Object rawEntry : FurnaceRecipes.smelting().getSmeltingList().entrySet()) {
-            Map.Entry<?, ?> entry = (Map.Entry<?, ?>) rawEntry;
-            if (!(entry.getKey() instanceof ItemStack)
-                    || !(entry.getValue() instanceof ItemStack)) continue;
-            ItemStack input = (ItemStack) entry.getKey();
-            ItemStack output = (ItemStack) entry.getValue();
-            if (input == null || input.getItem() != raw.getItem()
-                    || input.getItemDamage() != raw.getItemDamage()) continue;
-            if (output != null && ST.equal(output, cooked, true)
-                    && output.stackSize == cooked.stackSize) {
-                alreadySpecific++;
-            } else if (output != null && ST.equal(output, generic, true)
-                    && output.stackSize == generic.stackSize) {
-                candidateInput = input;
-                matches++;
-            } else {
-                FMLLog.info("[GT6MaterialExpansion] Chicken smelting: unexpected existing output=%s",
-                    describeStack(output));
-            }
-        }
-        if (matches == 0 && alreadySpecific == 1) {
-            FMLLog.info("[GT6MaterialExpansion] Chicken smelting: already species-specific");
-            return;
-        }
-        if (matches != 1 || alreadySpecific != 0) {
-            FMLLog.info("[GT6MaterialExpansion] Chicken smelting: expected one generic recipe, found %d; already-specific=%d; unchanged",
-                matches, alreadySpecific);
-            return;
-        }
-        FurnaceRecipes.smelting().getSmeltingList().put(candidateInput, cooked);
-        FMLLog.info("[GT6MaterialExpansion] Chicken smelting: replaced generic output with %s",
-            describeStack(cooked));
     }
 
     /** Read-only diagnostics for generated dust and shredder pulverisation targets. */
