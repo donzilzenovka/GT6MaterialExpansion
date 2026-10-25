@@ -6,6 +6,7 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import gregapi.data.CS;
 import gregapi.data.MT;
+import gregapi.util.OM;
 import gregapi.data.TD;
 import gregapi.oredict.OreDictMaterial;
 import gregapi.oredict.OreDictMaterialStack;
@@ -167,6 +168,7 @@ public final class GT6MaterialExpansion {
         assignIfMissing("BiomesOPlenty:mud", 0, Soil, 9 * U);
         // Additional item associations will follow after pack-specific verification.
         testChickenOverride();
+        diagnoseChickenProcessing();
     }
 
     /** Diagnostic only: use GT6's public API; do not bypass protected associations. */
@@ -192,6 +194,38 @@ public final class GT6MaterialExpansion {
         if (!accepted) {
             FMLLog.info("[GT6MaterialExpansion] Chicken override refused by GT6; no forced mutation attempted");
         }
+    }
+
+    /** Read-only diagnostics for generated dust and shredder pulverisation targets. */
+    private static void diagnoseChickenProcessing() {
+        ItemStack dust = OM.dust(ChickenRaw, 2 * U);
+        FMLLog.info("[GT6MaterialExpansion] Chicken processing: dust(ChickenRaw, 2U)=%s",
+            describeStack(dust));
+        FMLLog.info("[GT6MaterialExpansion] Chicken processing: pulver target=%s, amount=%d",
+            String.valueOf(ChickenRaw.mTargetPulver.mMaterial),
+            ChickenRaw.mTargetPulver.mAmount);
+        FMLLog.info("[GT6MaterialExpansion] Chicken processing: bone pulver target=%s, amount=%d",
+            String.valueOf(MT.Bone.mTargetPulver.mMaterial),
+            MT.Bone.mTargetPulver.mAmount);
+        Object item = Item.itemRegistry.getObject("minecraft:chicken");
+        if (item instanceof Item) {
+            OreDictItemData data = OreDictManager.INSTANCE.getItemData(
+                new ItemStack((Item)item, 1, 0));
+            if (data != null) {
+                for (OreDictMaterialStack component : data.getAllMaterialStacks()) {
+                    FMLLog.info("[GT6MaterialExpansion] Chicken processing: component=%s amount=%d pulver=%s ratio=%d",
+                        String.valueOf(component.mMaterial), component.mAmount,
+                        String.valueOf(component.mMaterial.mTargetPulver.mMaterial),
+                        component.mMaterial.mTargetPulver.mAmount);
+                }
+            }
+        }
+    }
+
+    private static String describeStack(ItemStack stack) {
+        if (stack == null) return "<NULL>";
+        return String.valueOf(stack.getItem()) + " x" + stack.stackSize
+            + " meta=" + stack.getItemDamage();
     }
 
     private static String describeMaterial(OreDictItemData data) {
