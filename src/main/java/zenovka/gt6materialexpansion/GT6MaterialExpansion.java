@@ -37,10 +37,12 @@ public final class GT6MaterialExpansion {
         RAW_CHICKEN = OreDictMaterial.createMaterial(32014, "ChickenRaw", "Raw Chicken");
         // Test material: inherit raw meat density; no recipes or processing registered.
         RAW_CHICKEN.setDensity(MT.MeatRaw.mGramPerCubicCentimeter);
+        RAW_CHICKEN.setLocal("Raw Chicken");
+        RAW_CHICKEN.setRGBa(255, 185, 193, 255);
         // GT6 food mortar recipes inspect the MEAT material tag, not merely ore names.
         RAW_CHICKEN.put(TD.Properties.MEAT);
         // Shredder recycling follows the pulverisation target of each constituent.
-        RAW_CHICKEN.setPulver(MT.MeatRaw, U);
+        RAW_CHICKEN.setPulver(RAW_CHICKEN, U);
         // Register equivalent GT6 material forms under the generic raw-meat name.
         RAW_CHICKEN.addReRegistrations(MT.MeatRaw);
 
