@@ -24,28 +24,20 @@ public final class GT6MaterialExpansion {
     private static final long U = CS.U;
 
     // IDs are in GT6's custom-material range; check for pack conflicts before release.
-    public static OreDictMaterial SILT;
     public static OreDictMaterial LOAM;
-    public static OreDictMaterial HUMUS;
     public static OreDictMaterial SOIL;
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
-        SILT = OreDictMaterial.createMaterial(32010, "ZenovkaSilt", "Silt");
-        LOAM = OreDictMaterial.createMaterial(32011, "ZenovkaLoam", "Loam");
-        HUMUS = OreDictMaterial.createMaterial(32012, "ZenovkaHumus", "Humus");
-        SOIL = OreDictMaterial.createMaterial(32013, "ZenovkaSoil", "Soil");
+        LOAM = OreDictMaterial.createMaterial(32011, "Loam", "Loam");
+        SOIL = OreDictMaterial.createMaterial(32013, "Soil", "Soil");
 
-        // The composition values are provisional material-model ratios.
-        // GT6's siltstone is the mineral proxy for loose silt.
-        SILT.setMoleculeConfiguration(new OreDictConfigurationComponent(1,
-            new OreDictMaterialStack(MT.STONES.Siltstone, U)));
+        // Soil is terminal: intrinsic water and biology are not decomposed.
+        // GT6 already defines Biomass; do not register a duplicate.
         LOAM.setMoleculeConfiguration(new OreDictConfigurationComponent(1,
-            new OreDictMaterialStack(MT.Sand, 4 * U),
-            new OreDictMaterialStack(SILT, 4 * U),
-            new OreDictMaterialStack(MT.Clay, 2 * U)));
-        // Humus chemistry is intentionally not invented in this first pass.
-        // SOIL remains an unconfigured material until its composition is agreed.
+            new OreDictMaterialStack(MT.STONES.Siltstone, 4 * U),
+            new OreDictMaterialStack(MT.Clay, 2 * U),
+            new OreDictMaterialStack(SOIL, 4 * U)));
     }
 
     @EventHandler
@@ -54,7 +46,7 @@ public final class GT6MaterialExpansion {
         // Do not replace GT6's existing item material assignments.
         assignIfMissing("minecraft:dirt", 0, SOIL, 9 * U);
         assignIfMissing("minecraft:dirt", 1, SOIL, 9 * U);
-        assignIfMissing("BiomesOPlenty:newBopDirt", 4, SILT, 9 * U);
+        assignIfMissing("BiomesOPlenty:newBopDirt", 4, MT.STONES.Siltstone, 9 * U);
         assignIfMissing("BiomesOPlenty:newBopGrass", 0, LOAM, 9 * U);
         assignIfMissing("BiomesOPlenty:mud", 0, SOIL, 9 * U);
         // Additional item associations will follow after pack-specific verification.
