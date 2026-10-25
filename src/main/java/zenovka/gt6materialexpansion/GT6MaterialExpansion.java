@@ -33,7 +33,7 @@ public final class GT6MaterialExpansion {
     public void preInit(FMLPreInitializationEvent event) {
         LOAM = OreDictMaterial.createMaterial(32011, "Loam", "Loam");
         SOIL = OreDictMaterial.createMaterial(32013, "Soil", "Soil");
-        RAW_CHICKEN = OreDictMaterial.createMaterial(32014, "RawChicken", "Raw Chicken");
+        RAW_CHICKEN = OreDictMaterial.createMaterial(32014, "ChickenRaw", "Raw Chicken");
         // Test material: inherit raw meat density; no recipes or processing registered.
         RAW_CHICKEN.setDensity(MT.MeatRaw.mGramPerCubicCentimeter);
 
