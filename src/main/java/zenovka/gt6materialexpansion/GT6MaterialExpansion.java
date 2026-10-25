@@ -305,10 +305,12 @@ public final class GT6MaterialExpansion {
         int matches = 0;
         int alreadySpecific = 0;
         Map.Entry<ItemStack, ItemStack> candidate = null;
-        for (Map.Entry<ItemStack, ItemStack> entry :
-                FurnaceRecipes.smelting().getSmeltingList().entrySet()) {
-            ItemStack input = entry.getKey();
-            ItemStack output = entry.getValue();
+        for (Object rawEntry : FurnaceRecipes.smelting().getSmeltingList().entrySet()) {
+            Map.Entry<?, ?> entry = (Map.Entry<?, ?>) rawEntry;
+            if (!(entry.getKey() instanceof ItemStack)
+                    || !(entry.getValue() instanceof ItemStack)) continue;
+            ItemStack input = (ItemStack) entry.getKey();
+            ItemStack output = (ItemStack) entry.getValue();
             if (input == null || input.getItem() != raw.getItem()
                     || input.getItemDamage() != raw.getItemDamage()) continue;
             if (output != null && ST.equal(output, cooked, true)
