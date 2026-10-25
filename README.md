@@ -4,11 +4,16 @@ Experimental GregTech 6 material-data add-on for Minecraft Forge **1.7.10-10.13.
 
 ## Material model
 
-The aim is to register foundational material compositions for vanilla and modded items, using GregTech's native material quantities. Mass and recycling should both derive from those compositions.
+**Minimal, non-invasive material enrichment.** Preserve GT6's existing material identity and item data. Only annotate missing material associations; do not introduce extra materials when GT6 already provides one. Existing named materials (e.g. Wheat) retain intrinsic water and biological content rather than being recursively broken down.
 
-The initial source registers four named materials in GT6's custom material ID range (32010–32013): Silt, Loam, Humus, and Soil. Silt provisionally uses GT6 Siltstone as its mineral proxy. Loam provisionally uses Sand:Silt:Clay in a 4:4:2 material-unit ratio. Humus and Soil are currently uncalibrated placeholders.
+- Dirt: 9U of **Soil** (new terminal material, ore dictionary name `Soil`).
+- Silt: **GT6 Siltstone** (no custom Silt material).
+- Loam: **40% GT6 Siltstone, 20% GT6 Clay, 40% Soil** by component material units (new material `Loam`).
+- Biomass: reuse **GT6 Biomass** (`MT.Biomass`); do not register a duplicate. Note GT6 declares it using a liquid/fluid material helper, so test solid item-data/recycling suitability before applying it to compost, mulch or food.
+- Humus: proposed Soil + Biomass, but **not yet assigned**; Forestry recipe amounts and processing need review.
+- Water: intrinsic to materials, not an extra breakdown component in this model.
 
-A limited set of vanilla and Biomes O' Plenty item stacks is assigned material data if no existing GT6 data is found. No new blocks, items, crafting recipes, or ore-dictionary aliases are intentionally added.
+Custom IDs 32011 and 32013 remain provisional and may collide with other custom materials. No new blocks, items, recipes or ore dictionary aliases are registered. Existing item data is never overwritten.
 
 ## Recycling is intentional
 
@@ -20,7 +25,7 @@ Target **Gradle 8.x** with a modern legacy-Minecraft build plugin compatible wit
 
 ## Build and validation status
 
-Build verified against Forge **1.7.10-10.13.4.1614** and **GT6 6.17.06**, producing Java 8 bytecode. In-game startup, material IDs, mod registry names, registration timing, tooltip quantities/weight, and recycling behavior still require validation in a disposable world.
+Build verified against Forge **1.7.10-10.13.4.1614** and **GT6 6.17.06**, producing Java 8 bytecode. The user has confirmed an in-game test showing dirt as 9.00 units of Soil with the previous implementation. The revised Loam definition and plain material names are not yet build- or runtime-verified; recycling still needs testing.
 
 ## Building
 
