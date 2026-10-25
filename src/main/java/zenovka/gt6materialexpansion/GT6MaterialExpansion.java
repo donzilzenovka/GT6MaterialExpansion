@@ -47,6 +47,10 @@ public final class GT6MaterialExpansion {
 
     @EventHandler
     public void postInit(FMLPostInitializationEvent event) {
+        // Explicit balance adjustment: cooking retains approximately 75% of raw meat mass.
+        // Change only mass; do not make raw meat a chemical component of cooked meat.
+        MT.MeatCooked.mMass = Math.round(MT.MeatRaw.mMass * 0.75D);
+
         // Deliberately conservative: only unannotated item stacks receive data.
         // Do not replace GT6's existing item material assignments.
         assignIfMissing("minecraft:dirt", 0, SOIL, 9 * U);
