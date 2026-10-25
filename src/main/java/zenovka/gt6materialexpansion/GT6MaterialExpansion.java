@@ -60,6 +60,12 @@ public final class GT6MaterialExpansion {
         OP.dustSmall.forceItemGeneration(ChickenRaw);
         OP.dustTiny.forceItemGeneration(ChickenRaw);
         OP.dustDiv72.forceItemGeneration(ChickenRaw);
+        // Match the cooked chicken form family; let GT6 handle any applicable recipes.
+        OP.nugget.forceItemGeneration(ChickenRaw);
+        OP.chunkGt.forceItemGeneration(ChickenRaw);
+        OP.billet.forceItemGeneration(ChickenRaw);
+        OP.ingot.forceItemGeneration(ChickenRaw);
+        OP.blockIngot.forceItemGeneration(ChickenRaw);
         // Register equivalent GT6 material forms under the generic raw-meat name.
         ChickenRaw.addReRegistrations(MT.MeatRaw);
 
