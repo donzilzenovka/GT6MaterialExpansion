@@ -304,7 +304,7 @@ public final class GT6MaterialExpansion {
         }
         int matches = 0;
         int alreadySpecific = 0;
-        Map.Entry<ItemStack, ItemStack> candidate = null;
+        ItemStack candidateInput = null;
         for (Object rawEntry : FurnaceRecipes.smelting().getSmeltingList().entrySet()) {
             Map.Entry<?, ?> entry = (Map.Entry<?, ?>) rawEntry;
             if (!(entry.getKey() instanceof ItemStack)
@@ -318,7 +318,7 @@ public final class GT6MaterialExpansion {
                 alreadySpecific++;
             } else if (output != null && ST.equal(output, generic, true)
                     && output.stackSize == generic.stackSize) {
-                candidate = entry;
+                candidateInput = input;
                 matches++;
             } else {
                 FMLLog.info("[GT6MaterialExpansion] Chicken smelting: unexpected existing output=%s",
@@ -334,7 +334,7 @@ public final class GT6MaterialExpansion {
                 matches, alreadySpecific);
             return;
         }
-        candidate.setValue(cooked);
+        FurnaceRecipes.smelting().getSmeltingList().put(candidateInput, cooked);
         FMLLog.info("[GT6MaterialExpansion] Chicken smelting: replaced generic output with %s",
             describeStack(cooked));
     }
