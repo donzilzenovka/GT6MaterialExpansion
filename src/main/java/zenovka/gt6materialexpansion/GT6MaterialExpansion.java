@@ -51,6 +51,23 @@ public final class GT6MaterialExpansion {
         // Cooking retains 75% of raw meat weight without changing components or recipes.
         MT.MeatCooked.setDensity(MT.MeatRaw.mGramPerCubicCentimeter * 0.75D);
 
+        // Species-specific wood densities (g/cm^3). Keep generic Wood and Bark unchanged.
+        // Real woods use approximate air-dry densities; magical woods use agreed estimates.
+        MT.WOODS.Oak.setDensity(0.70D);
+        MT.WOODS.Birch.setDensity(0.65D);
+        MT.WOODS.Spruce.setDensity(0.45D);
+        MT.WOODS.Mahogany.setDensity(0.60D);
+        MT.WOODS.Maple.setDensity(0.70D);
+        MT.WOODS.Balsa.setDensity(0.16D);
+        MT.WOODS.Ebony.setDensity(1.05D);
+        MT.WOODS.Greenheart.setDensity(1.00D);
+        MT.WOODS.Ipe.setDensity(1.05D);
+        MT.Skyroot.setDensity(0.55D);
+        MT.Greatwood.setDensity(0.80D);
+        MT.Silverwood.setDensity(0.50D);
+        MT.Livingwood.setDensity(0.90D);
+        MT.Dreamwood.setDensity(0.40D);
+
         // Deliberately conservative: only unannotated item stacks receive data.
         // Do not replace GT6's existing item material assignments.
         assignIfMissing("minecraft:dirt", 0, SOIL, 9 * U);
