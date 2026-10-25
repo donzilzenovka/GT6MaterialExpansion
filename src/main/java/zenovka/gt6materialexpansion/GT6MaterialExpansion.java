@@ -4,6 +4,7 @@ import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
+import cpw.mods.fml.common.event.FMLServerStartedEvent;
 import gregapi.data.CS;
 import gregapi.data.MT;
 import gregapi.data.OP;
@@ -179,7 +180,8 @@ public final class GT6MaterialExpansion {
         // Additional item associations will follow after pack-specific verification.
         testChickenOverride();
         diagnoseChickenProcessing();
-        overrideChickenMortarOutput();
+        // Mortar recipes may be populated by GT6 after postInit.
+        // Keep the early diagnostics, but defer any recipe mutation.
     }
 
     /** Diagnostic only: use GT6's public API; do not bypass protected associations. */
@@ -205,6 +207,12 @@ public final class GT6MaterialExpansion {
         if (!accepted) {
             FMLLog.info("[GT6MaterialExpansion] Chicken override refused by GT6; no forced mutation attempted");
         }
+    }
+
+    @EventHandler
+    public void serverStarted(FMLServerStartedEvent event) {
+        FMLLog.info("[GT6MaterialExpansion] Chicken mortar: checking after server startup");
+        overrideChickenMortarOutput();
     }
 
     /** Change only the already-registered vanilla chicken mortar output. */
