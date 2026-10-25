@@ -174,7 +174,8 @@ public final class GT6MaterialExpansion {
         long amount = before != null && before.mMaterial != null
             ? before.mMaterial.mAmount : U;
         boolean accepted = OreDictManager.INSTANCE.setItemData(
-            chicken, new OreDictItemData(RAW_CHICKEN, amount));
+            chicken, new OreDictItemData(RAW_CHICKEN, amount,
+                new OreDictMaterialStack(MT.Bone, U / 9)));
         OreDictItemData after = OreDictManager.INSTANCE.getItemData(chicken);
         FMLLog.info("[GT6MaterialExpansion] Chicken override: accepted=%s, after=%s",
             accepted, describeMaterial(after));
