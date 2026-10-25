@@ -32,7 +32,12 @@ public final class GT6MaterialExpansion {
         LOAM = OreDictMaterial.createMaterial(32011, "Loam", "Loam");
         SOIL = OreDictMaterial.createMaterial(32013, "Soil", "Soil");
 
-        // Soil is terminal: intrinsic water and biology are not decomposed.
+        // Soil uses GT6 constituent masses, never a hardcoded kilogram value.
+        // Nine-part ratio: 6 Stone, 2 Biomass, 1 Water.
+        SOIL.setMoleculeConfiguration(new OreDictConfigurationComponent(9,
+            new OreDictMaterialStack(MT.Stone, 6 * U),
+            new OreDictMaterialStack(MT.Biomass, 2 * U),
+            new OreDictMaterialStack(MT.H2O, U)));
         // GT6 already defines Biomass; do not register a duplicate.
         LOAM.setMoleculeConfiguration(new OreDictConfigurationComponent(10,
             new OreDictMaterialStack(MT.STONES.Siltstone, 4 * U),
