@@ -23,3 +23,7 @@ Target **Gradle 8.x** with a modern legacy-Minecraft build plugin compatible wit
 **Experimental source; not compiled or tested.** A reproducible Forge 1.7.10-10.13.4.1614 Gradle environment and GT6 6.17.06 dependency still need to be established. Material IDs, actual GT6 API compatibility, mod registry names, and registration timing must be checked.
 
 Next: build against the specified Forge/GT6 versions, confirm GT6 tooltip material quantities and weight, and test recycling recipes in a disposable world.
+
+## Gradle 8.8 scaffold
+
+RetroFuturaGradle 2.0.2 is configured in `build.gradle.kts`. Place the matching **GT6 6.17.06** mod jar at `libs/gregtech_1.7.10-6.17.06.jar` (the jar is deliberately ignored by Git). The repository includes `gradle/wrapper/gradle-wrapper.properties` but **does not yet include wrapper launcher scripts or the wrapper JAR**. With Gradle 8.8 installed, run `gradle wrapper --gradle-version 8.8` to generate them, then `./gradlew build` (or `gradlew.bat build` on Windows). The project has not yet been compiled or run; verify the exact dependency mappings and source APIs before distributing a JAR.
