@@ -39,6 +39,8 @@ public final class GT6MaterialExpansion {
         RAW_CHICKEN.setDensity(MT.MeatRaw.mGramPerCubicCentimeter);
         // GT6 food mortar recipes inspect the MEAT material tag, not merely ore names.
         RAW_CHICKEN.put(TD.Properties.MEAT);
+        // Shredder recycling follows the pulverisation target of each constituent.
+        RAW_CHICKEN.setPulver(MT.MeatRaw, U);
         // Register equivalent GT6 material forms under the generic raw-meat name.
         RAW_CHICKEN.addReRegistrations(MT.MeatRaw);
 
