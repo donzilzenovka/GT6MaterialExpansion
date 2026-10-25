@@ -20,6 +20,8 @@ import gregapi.oredict.OreDictManager;
 import gregapi.oredict.configurations.OreDictConfigurationComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.crafting.FurnaceRecipes;
+import java.util.Map;
 import cpw.mods.fml.common.FMLLog;
 
 /**
@@ -36,12 +38,14 @@ public final class GT6MaterialExpansion {
     public static OreDictMaterial Soil;
 	
     public static OreDictMaterial ChickenRaw;
+    public static OreDictMaterial ChickenCooked;
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         Loam = OreDictMaterial.createMaterial(32011, "Loam", "Loam");
         Soil = OreDictMaterial.createMaterial(32013, "Soil", "Soil");
         ChickenRaw = OreDictMaterial.createMaterial(32014, "ChickenRaw", "Raw Chicken");
+        ChickenCooked = OreDictMaterial.createMaterial(32015, "ChickenCooked", "Cooked Chicken");
         // Test material: inherit raw meat density; no recipes or processing registered.
         ChickenRaw.setDensity(MT.MeatRaw.mGramPerCubicCentimeter);
         ChickenRaw.setLocal("Raw Chicken");
@@ -58,6 +62,18 @@ public final class GT6MaterialExpansion {
         OP.dustDiv72.forceItemGeneration(ChickenRaw);
         // Register equivalent GT6 material forms under the generic raw-meat name.
         ChickenRaw.addReRegistrations(MT.MeatRaw);
+
+        // Preserve species identity while inheriting GT6's generic cooked-meat recipes.
+        ChickenCooked.setDensity(MT.MeatRaw.mGramPerCubicCentimeter * 0.75D);
+        ChickenCooked.setLocal("Cooked Chicken");
+        ChickenCooked.setRGBa(190, 130, 83, 255);
+        ChickenCooked.put(TD.Properties.MEAT);
+        ChickenCooked.setPulver(ChickenCooked, U);
+        OP.dust.forceItemGeneration(ChickenCooked);
+        OP.dustSmall.forceItemGeneration(ChickenCooked);
+        OP.dustTiny.forceItemGeneration(ChickenCooked);
+        OP.dustDiv72.forceItemGeneration(ChickenCooked);
+        ChickenCooked.addReRegistrations(MT.MeatCooked);
 
         // Soil uses GT6 constituent masses, never a hardcoded kilogram value.
         // Nine-part ratio: 6 Stone, 2 Biomass, 1 Water.
@@ -213,6 +229,7 @@ public final class GT6MaterialExpansion {
     public void serverStarted(FMLServerStartedEvent event) {
         FMLLog.info("[GT6MaterialExpansion] Chicken mortar: checking after server startup");
         overrideChickenMortarOutput();
+        overrideChickenSmeltingOutput();
     }
 
     /** Change only the already-registered vanilla chicken mortar output. */
@@ -271,6 +288,53 @@ public final class GT6MaterialExpansion {
         // GT6 Recipe explicitly permits output-array changes without reindexing inputs.
         candidate.mOutputs[0] = specific;
         FMLLog.info("[GT6MaterialExpansion] Chicken mortar: replaced generic output with %s", describeStack(specific));
+    }
+
+    /**
+     * Keep GT6's ore-dictionary generated furnace recipe and replace only its
+     * result. Avoid registering a competing furnace recipe or changing input data.
+     */
+    private static void overrideChickenSmeltingOutput() {
+        ItemStack raw = OM.dust(ChickenRaw, U);
+        ItemStack generic = OM.dust(MT.MeatCooked, U);
+        ItemStack cooked = OM.dust(ChickenCooked, U);
+        if (raw == null || generic == null || cooked == null) {
+            FMLLog.info("[GT6MaterialExpansion] Chicken smelting: dust form unavailable; unchanged");
+            return;
+        }
+        int matches = 0;
+        int alreadySpecific = 0;
+        Map.Entry<ItemStack, ItemStack> candidate = null;
+        for (Map.Entry<ItemStack, ItemStack> entry :
+                FurnaceRecipes.smelting().getSmeltingList().entrySet()) {
+            ItemStack input = entry.getKey();
+            ItemStack output = entry.getValue();
+            if (input == null || input.getItem() != raw.getItem()
+                    || input.getItemDamage() != raw.getItemDamage()) continue;
+            if (output != null && ST.equal(output, cooked, true)
+                    && output.stackSize == cooked.stackSize) {
+                alreadySpecific++;
+            } else if (output != null && ST.equal(output, generic, true)
+                    && output.stackSize == generic.stackSize) {
+                candidate = entry;
+                matches++;
+            } else {
+                FMLLog.info("[GT6MaterialExpansion] Chicken smelting: unexpected existing output=%s",
+                    describeStack(output));
+            }
+        }
+        if (matches == 0 && alreadySpecific == 1) {
+            FMLLog.info("[GT6MaterialExpansion] Chicken smelting: already species-specific");
+            return;
+        }
+        if (matches != 1 || alreadySpecific != 0) {
+            FMLLog.info("[GT6MaterialExpansion] Chicken smelting: expected one generic recipe, found %d; already-specific=%d; unchanged",
+                matches, alreadySpecific);
+            return;
+        }
+        candidate.setValue(cooked);
+        FMLLog.info("[GT6MaterialExpansion] Chicken smelting: replaced generic output with %s",
+            describeStack(cooked));
     }
 
     /** Read-only diagnostics for generated dust and shredder pulverisation targets. */
