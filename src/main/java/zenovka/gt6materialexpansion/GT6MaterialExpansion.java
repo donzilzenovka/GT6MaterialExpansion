@@ -26,37 +26,38 @@ public final class GT6MaterialExpansion {
     private static final long U = CS.U;
 
     // IDs are in GT6's custom-material range; check for pack conflicts before release.
-    public static OreDictMaterial LOAM;
-    public static OreDictMaterial SOIL;
-    public static OreDictMaterial RAW_CHICKEN;
+    public static OreDictMaterial Loam;
+    public static OreDictMaterial Soil;
+	
+    public static OreDictMaterial ChickenRaw;
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
-        LOAM = OreDictMaterial.createMaterial(32011, "Loam", "Loam");
-        SOIL = OreDictMaterial.createMaterial(32013, "Soil", "Soil");
-        RAW_CHICKEN = OreDictMaterial.createMaterial(32014, "ChickenRaw", "Raw Chicken");
+        Loam = OreDictMaterial.createMaterial(32011, "Loam", "Loam");
+        Soil = OreDictMaterial.createMaterial(32013, "Soil", "Soil");
+        ChickenRaw = OreDictMaterial.createMaterial(32014, "ChickenRaw", "Raw Chicken");
         // Test material: inherit raw meat density; no recipes or processing registered.
-        RAW_CHICKEN.setDensity(MT.MeatRaw.mGramPerCubicCentimeter);
-        RAW_CHICKEN.setLocal("Raw Chicken");
-        RAW_CHICKEN.setRGBa(255, 185, 193, 255);
+        ChickenRaw.setDensity(MT.MeatRaw.mGramPerCubicCentimeter);
+        ChickenRaw.setLocal("Raw Chicken");
+        ChickenRaw.setRGBa(255, 185, 193, 255);
         // GT6 food mortar recipes inspect the MEAT material tag, not merely ore names.
-        RAW_CHICKEN.put(TD.Properties.MEAT);
+        ChickenRaw.put(TD.Properties.MEAT);
         // Shredder recycling follows the pulverisation target of each constituent.
-        RAW_CHICKEN.setPulver(RAW_CHICKEN, U);
+        ChickenRaw.setPulver(ChickenRaw, U);
         // Register equivalent GT6 material forms under the generic raw-meat name.
-        RAW_CHICKEN.addReRegistrations(MT.MeatRaw);
+        ChickenRaw.addReRegistrations(MT.MeatRaw);
 
         // Soil uses GT6 constituent masses, never a hardcoded kilogram value.
         // Nine-part ratio: 6 Stone, 2 Biomass, 1 Water.
-        SOIL.setMoleculeConfiguration(new OreDictConfigurationComponent(9,
+        Soil.setMoleculeConfiguration(new OreDictConfigurationComponent(9,
             new OreDictMaterialStack(MT.Stone, 6 * U),
             new OreDictMaterialStack(MT.Biomass, 2 * U),
             new OreDictMaterialStack(MT.H2O, U)));
         // GT6 already defines Biomass; do not register a duplicate.
-        LOAM.setMoleculeConfiguration(new OreDictConfigurationComponent(10,
+        Loam.setMoleculeConfiguration(new OreDictConfigurationComponent(10,
             new OreDictMaterialStack(MT.STONES.Siltstone, 4 * U),
             new OreDictMaterialStack(MT.Clay, 2 * U),
-            new OreDictMaterialStack(SOIL, 4 * U)));
+            new OreDictMaterialStack(Soil, 4 * U)));
     }
 
     @EventHandler
@@ -159,11 +160,11 @@ public final class GT6MaterialExpansion {
 
         // Deliberately conservative: only unannotated item stacks receive data.
         // Do not replace GT6's existing item material assignments.
-        assignIfMissing("minecraft:dirt", 0, SOIL, 9 * U);
-        assignIfMissing("minecraft:dirt", 1, SOIL, 9 * U);
+        assignIfMissing("minecraft:dirt", 0, Soil, 9 * U);
+        assignIfMissing("minecraft:dirt", 1, Soil, 9 * U);
         assignIfMissing("BiomesOPlenty:newBopDirt", 4, MT.STONES.Siltstone, 9 * U);
-        assignIfMissing("BiomesOPlenty:newBopGrass", 0, LOAM, 9 * U);
-        assignIfMissing("BiomesOPlenty:mud", 0, SOIL, 9 * U);
+        assignIfMissing("BiomesOPlenty:newBopGrass", 0, Loam, 9 * U);
+        assignIfMissing("BiomesOPlenty:mud", 0, Soil, 9 * U);
         // Additional item associations will follow after pack-specific verification.
         testChickenOverride();
     }
@@ -183,7 +184,7 @@ public final class GT6MaterialExpansion {
         long amount = before != null && before.mMaterial != null
             ? before.mMaterial.mAmount : U;
         boolean accepted = OreDictManager.INSTANCE.setItemData(
-            chicken, new OreDictItemData(RAW_CHICKEN, amount,
+            chicken, new OreDictItemData(ChickenRaw, amount,
                 new OreDictMaterialStack(MT.Bone, U / 9)));
         OreDictItemData after = OreDictManager.INSTANCE.getItemData(chicken);
         FMLLog.info("[GT6MaterialExpansion] Chicken override: accepted=%s, after=%s",
