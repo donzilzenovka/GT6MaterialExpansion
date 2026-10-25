@@ -7,6 +7,9 @@ import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import gregapi.data.CS;
 import gregapi.data.MT;
 import gregapi.data.OP;
+import gregapi.data.RM;
+import gregapi.recipes.Recipe;
+import gregapi.util.ST;
 import gregapi.util.OM;
 import gregapi.data.TD;
 import gregapi.oredict.OreDictMaterial;
@@ -176,6 +179,7 @@ public final class GT6MaterialExpansion {
         // Additional item associations will follow after pack-specific verification.
         testChickenOverride();
         diagnoseChickenProcessing();
+        overrideChickenMortarOutput();
     }
 
     /** Diagnostic only: use GT6's public API; do not bypass protected associations. */
@@ -201,6 +205,37 @@ public final class GT6MaterialExpansion {
         if (!accepted) {
             FMLLog.info("[GT6MaterialExpansion] Chicken override refused by GT6; no forced mutation attempted");
         }
+    }
+
+    /** Change only the already-registered vanilla chicken mortar output. */
+    private static void overrideChickenMortarOutput() {
+        Object registered = Item.itemRegistry.getObject("minecraft:chicken");
+        if (!(registered instanceof Item)) return;
+        ItemStack chicken = new ItemStack((Item)registered, 1, 0);
+        ItemStack generic = OM.dust(MT.MeatRaw, 2 * U);
+        ItemStack specific = OM.dust(ChickenRaw, 2 * U);
+        if (generic == null || specific == null) {
+            FMLLog.info("[GT6MaterialExpansion] Chicken mortar: output unavailable; unchanged");
+            return;
+        }
+        Recipe candidate = null;
+        int matches = 0;
+        for (Recipe recipe : RM.Mortar.mRecipeList) {
+            if (recipe.mInputs.length != 1 || recipe.mOutputs.length != 1) continue;
+            if (!ST.equal(recipe.mInputs[0], chicken, true)) continue;
+            if (recipe.mInputs[0].stackSize != 1) continue;
+            if (!ST.equal(recipe.mOutputs[0], generic, true)) continue;
+            if (recipe.mOutputs[0].stackSize != generic.stackSize) continue;
+            candidate = recipe;
+            matches++;
+        }
+        if (matches != 1) {
+            FMLLog.info("[GT6MaterialExpansion] Chicken mortar: expected one vanilla recipe, found %d; unchanged", matches);
+            return;
+        }
+        // GT6 Recipe explicitly permits output-array changes without reindexing inputs.
+        candidate.mOutputs[0] = specific;
+        FMLLog.info("[GT6MaterialExpansion] Chicken mortar: replaced generic output with %s", describeStack(specific));
     }
 
     /** Read-only diagnostics for generated dust and shredder pulverisation targets. */
