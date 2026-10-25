@@ -34,7 +34,7 @@ public final class GT6MaterialExpansion {
 
         // Soil is terminal: intrinsic water and biology are not decomposed.
         // GT6 already defines Biomass; do not register a duplicate.
-        LOAM.setMoleculeConfiguration(new OreDictConfigurationComponent(1,
+        LOAM.setMoleculeConfiguration(new OreDictConfigurationComponent(10,
             new OreDictMaterialStack(MT.STONES.Siltstone, 4 * U),
             new OreDictMaterialStack(MT.Clay, 2 * U),
             new OreDictMaterialStack(SOIL, 4 * U)));
