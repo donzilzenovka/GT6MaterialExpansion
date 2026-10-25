@@ -1,6 +1,6 @@
 plugins {
     `java-library`
-    id("com.gtnewhorizons.retrofuturagradle") version "2.0.2"
+    id("com.gtnewhorizons.retrofuturagradle") version "1.4.9"
 }
 
 group = "zenovka"
