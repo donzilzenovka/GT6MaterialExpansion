@@ -22,6 +22,9 @@ import java.util.Set;
 public final class FloraMaterials {
     private FloraMaterials() {}
     private static final long U = CS.U;
+    private static final long FRESH_GRASS = U / 4;
+    // GT6 dryer: 20 mB water removed per grass; PlantMatter is 50 kg/U.
+    private static final long DRY_GRASS = Math.round(U * 0.2496D);
     private static final Set<String> seen = new HashSet<String>();
 
     public static void register(OreDictMaterial plantMatter) {
@@ -76,7 +79,10 @@ public final class FloraMaterials {
                 // Wildcard registrations can represent mixed metadata. Never write wildcard data.
                 if (stack.getItemDamage() == OreDictionary.WILDCARD_VALUE) continue;
                 OreDictMaterial wood = sapling ? woodFor(oreName, stack) : null;
-                assign(stack, plantMatter, wood, oreName, bale ? 9 * U / 4 : leaves ? U / 2 : U / 4);
+                long amount = leaves ? U / 2 : FRESH_GRASS;
+                if (oreName.equals("itemGrassDry")) amount = DRY_GRASS;
+                if (bale) amount = 9 * (oreName.equals("baleGrassDry") ? DRY_GRASS : FRESH_GRASS);
+                assign(stack, plantMatter, wood, oreName, amount);
             }
         }
         FMLLog.info("[GT6MaterialExpansion] Flora composition scan complete; assigned %d stacks", seen.size());
