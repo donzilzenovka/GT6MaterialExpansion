@@ -29,6 +29,8 @@ public final class MiscMaterials {
         put("minecraft:farmland", 0, soil, 9 * U);
         put("minecraft:mycelium", 0, soil, 8 * U, mycelium, U);
         put("minecraft:cactus", 0, plant, U);
+        // Nether Wart is treated as a fungal growth, not generic vegetation.
+        put("minecraft:nether_wart", 0, mycelium, U / 4);
         put("minecraft:sponge", 0, organic, U);
         put("minecraft:sponge", 1, organic, U);
         put("minecraft:sandstone_stairs", 0, MT.Sand, 3 * U / 4);
