@@ -2,7 +2,7 @@ package zenovka.gt6materialexpansion;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.gameevent.TickEvent;
+import cpw.mods.fml.common.gameevent.PlayerEvent;
 import gregapi.data.CS;
 import gregapi.data.MT;
 import gregapi.data.OP;
@@ -32,11 +32,9 @@ public final class ToolMaterials {
     }
 
     @SubscribeEvent
-    public void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || event.player.worldObj.isRemote
-                || event.player.ticksExisted % 20 != 0) return;
-        EntityPlayer player = event.player;
-        for (ItemStack stack : player.inventory.mainInventory) annotate(stack);
+    public void onCrafted(PlayerEvent.ItemCraftedEvent event) {
+        // Only annotate the newly crafted output; existing inventory items are untouched.
+        annotate(event.crafting);
     }
 
     private static void annotate(ItemStack stack) {
