@@ -1,5 +1,6 @@
 # GT6-generated material forms
 
+# Raw Chicken
 oredict.blockIngotChickenRaw=Block of Raw Chicken bars
 oredict.blockDustChickenRaw=Block of Raw Minced Chicken
 oredict.blockSolidChickenRaw=Compressed Block of Raw Chicken
@@ -14,6 +15,7 @@ oredict.chunkGtChickenRaw=Raw Chicken Chunk
 oredict.billetChickenRaw=Raw Chicken Billet
 oredict.ingotChickenRaw=Raw Chicken Bar
 
+# Raw Chicken
 oredict.blockIngotChickenCooked=Block of Cooked Chicken bars
 oredict.blockDustChickenCooked=Block of Cooked Minced Chicken
 oredict.blockSolidChickenCooked=Compressed Block of Cooked Chicken
@@ -28,8 +30,7 @@ oredict.chunkGtChickenCooked=Cooked Chicken Chunk
 oredict.billetChickenCooked=Cooked Chicken Billet
 oredict.ingotChickenCooked=Cooked Chicken Bar
 
-
-
+# Raw Beef
 oredict.blockIngotBeefRaw=Block of Raw Beef bars
 oredict.blockDustBeefRaw=Block of Raw Minced Beef
 oredict.blockSolidBeefRaw=Compressed Block of Raw Beef
@@ -44,6 +45,7 @@ oredict.chunkGtBeefRaw=Raw Beef Chunk
 oredict.billetBeefRaw=Raw Beef Billet
 oredict.ingotBeefRaw=Raw Beef Bar
 
+# Cooked Beef
 oredict.blockIngotBeefCooked=Block of Cooked Beef bars
 oredict.blockDustBeefCooked=Block of Cooked Minced Beef
 oredict.blockSolidBeefCooked=Compressed Block of Cooked Beef
@@ -58,6 +60,7 @@ oredict.chunkGtBeefCooked=Cooked Beef Chunk
 oredict.billetBeefCooked=Cooked Beef Billet
 oredict.ingotBeefCooked=Cooked Beef Bar
 
+# Raw Pork
 oredict.blockIngotPorkRaw=Block of Raw Pork bars
 oredict.blockDustPorkRaw=Block of Raw Minced Pork
 oredict.blockSolidPorkRaw=Compressed Block of Raw Pork
@@ -72,6 +75,7 @@ oredict.chunkGtPorkRaw=Raw Pork Chunk
 oredict.billetPorkRaw=Raw Pork Billet
 oredict.ingotPorkRaw=Raw Pork Bar
 
+# Cooked Pork
 oredict.blockIngotPorkCooked=Block of Cooked Pork bars
 oredict.blockDustPorkCooked=Block of Cooked Minced Pork
 oredict.blockSolidPorkCooked=Compressed Block of Cooked Pork
@@ -86,6 +90,7 @@ oredict.chunkGtPorkCooked=Cooked Pork Chunk
 oredict.billetPorkCooked=Cooked Pork Billet
 oredict.ingotPorkCooked=Cooked Pork Bar
 
+# Raw Mutton
 oredict.blockIngotMuttonRaw=Block of Raw Mutton bars
 oredict.blockDustMuttonRaw=Block of Raw Minced Mutton
 oredict.blockSolidMuttonRaw=Compressed Block of Raw Mutton
@@ -100,6 +105,7 @@ oredict.chunkGtMuttonRaw=Raw Mutton Chunk
 oredict.billetMuttonRaw=Raw Mutton Billet
 oredict.ingotMuttonRaw=Raw Mutton Bar
 
+#Cooked Mutton
 oredict.blockIngotMuttonCooked=Block of Cooked Mutton bars
 oredict.blockDustMuttonCooked=Block of Cooked Minced Mutton
 oredict.blockSolidMuttonCooked=Compressed Block of Cooked Mutton
@@ -115,61 +121,61 @@ oredict.billetMuttonCooked=Cooked Mutton Billet
 oredict.ingotMuttonCooked=Cooked Mutton Bar
 
 # Raw Cod
-oredict.blockIngotCodRaw=Block of Raw Chicken bars
-oredict.blockDustCodRaw=Block of Raw Fishmeal Chicken
-oredict.blockSolidCodRaw=Compressed Block of Raw Chicken
-oredict.crateGt664DustCodRaw=Crate of Raw Fishmeal Chicken
-oredict.crateGt64IngotCodRaw=Crate of Raw Fishmeal Chicken Bars
-oredict.dustCodRaw=Raw Fishmeal Chicken
-oredict.dustSmallCodRaw=Small Pile of Raw Fishmeal Chicken
-oredict.dustTinyCodRaw=Tiny Pile of Raw Fishmeal Chicken
-oredict.dustDiv72CodRaw=1/72nd of a Pile of Raw Fishmeal Chicken
-oredict.nuggetCodRaw=Raw Chicken Nugget
-oredict.chunkGtCodRaw=Raw Chicken Chunk
-oredict.billetCodRaw=Raw Chicken Billet
-oredict.ingotCodRaw=Raw Chicken Bar
+oredict.blockIngotCodRaw=Block of Raw Cod bars
+oredict.blockDustCodRaw=Block of Raw Code Paste
+oredict.blockSolidCodRaw=Compressed Block of Raw Cod
+oredict.crateGt664DustCodRaw=Crate of Raw Cod Paste
+oredict.crateGt64IngotCodRaw=Crate of Raw Cod bars
+oredict.dustCodRaw=Raw Cod Paste
+oredict.dustSmallCodRaw=Small Pile of Raw Cod Paste
+oredict.dustTinyCodRaw=Tiny Pile of Raw Cod Paste
+oredict.dustDiv72CodRaw=1/72nd of a Pile of Raw Cod Paste
+oredict.nuggetCodRaw=Raw Cod Nugget
+oredict.chunkGtCodRaw=Raw Cod Chunk
+oredict.billetCodRaw=Raw Cod Billet
+oredict.ingotCodRaw=Raw Cod Bar
 
 # Cooked Cod
-oredict.blockIngotCodCooked=Block of Cooked Chicken bars
-oredict.blockDustCodCooked=Block of Cooked Fishmeal Chicken
-oredict.blockSolidCodCooked=Compressed Block of Cooked Chicken
-oredict.crateGt664DustCodCooked=Crate of Cooked Fishmeal Chicken
-oredict.crateGt64IngotCodCooked=Crate of Cooked Fishmeal Chicken Bars
-oredict.dustCodCooked=Cooked Fishmeal Chicken
-oredict.dustSmallCodCooked=Small Pile of Cooked Fishmeal Chicken
-oredict.dustTinyCodCooked=Tiny Pile of Cooked Fishmeal Chicken
-oredict.dustDiv72CodCooked=1/72nd of a Pile of Cooked Fishmeal Chicken
-oredict.nuggetCodCooked=Cooked Chicken Nugget
-oredict.chunkGtCodCooked=Cooked Chicken Chunk
-oredict.billetCodCooked=Cooked Chicken Billet
-oredict.ingotCodCooked=Cooked Chicken Bar
+oredict.blockIngotCodCooked=Block of Cooked Cod bars
+oredict.blockDustCodCooked=Block of Cooked Code Paste
+oredict.blockSolidCodCooked=Compressed Block of Cooked Cod
+oredict.crateGt664DustCodCooked=Crate of Cooked Cod Paste
+oredict.crateGt64IngotCodCooked=Crate of Cooked Cod bars
+oredict.dustCodCooked=Cooked Cod Paste
+oredict.dustSmallCodCooked=Small Pile of Cooked Cod Paste
+oredict.dustTinyCodCooked=Tiny Pile of Cooked Cod Paste
+oredict.dustDiv72CodCooked=1/72nd of a Pile of Cooked Cod Paste
+oredict.nuggetCodCooked=Cooked Cod Nugget
+oredict.chunkGtCodCooked=Cooked Cod Chunk
+oredict.billetCodCooked=Cooked Cod Billet
+oredict.ingotCodCooked=Cooked Cod Bar
 
 # Raw Salmon
-oredict.blockIngotSalmonRaw=Block of Raw Chicken bars
-oredict.blockDustSalmonRaw=Block of Raw Fishmeal Chicken
-oredict.blockSolidSalmonRaw=Compressed Block of Raw Chicken
-oredict.crateGt664DustSalmonRaw=Crate of Raw Fishmeal Chicken
-oredict.crateGt64IngotSalmonRaw=Crate of Raw Fishmeal Chicken Bars
-oredict.dustSalmonRaw=Raw Fishmeal Chicken
-oredict.dustSmallSalmonRaw=Small Pile of Raw Fishmeal Chicken
-oredict.dustTinySalmonRaw=Tiny Pile of Raw Fishmeal Chicken
-oredict.dustDiv72SalmonRaw=1/72nd of a Pile of Raw Fishmeal Chicken
-oredict.nuggetSalmonRaw=Raw Chicken Nugget
-oredict.chunkGtSalmonRaw=Raw Chicken Chunk
-oredict.billetSalmonRaw=Raw Chicken Billet
-oredict.ingotSalmonRaw=Raw Chicken Bar
+oredict.blockIngotSalmonRaw=Block of Raw Salmon bars
+oredict.blockDustSalmonRaw=Block of Raw Salmone Paste
+oredict.blockSolidSalmonRaw=Compressed Block of Raw Salmon
+oredict.crateGt664DustSalmonRaw=Crate of Raw Salmon Paste
+oredict.crateGt64IngotSalmonRaw=Crate of Raw Salmon bars
+oredict.dustSalmonRaw=Raw Salmon Paste
+oredict.dustSmallSalmonRaw=Small Pile of Raw Salmon Paste
+oredict.dustTinySalmonRaw=Tiny Pile of Raw Salmon Paste
+oredict.dustDiv72SalmonRaw=1/72nd of a Pile of Raw Salmon Paste
+oredict.nuggetSalmonRaw=Raw Salmon Nugget
+oredict.chunkGtSalmonRaw=Raw Salmon Chunk
+oredict.billetSalmonRaw=Raw Salmon Billet
+oredict.ingotSalmonRaw=Raw Salmon Bar
 
 # Cooked Salmon
-oredict.blockIngotSalmonCooked=Block of Cooked Chicken bars
-oredict.blockDustSalmonCooked=Block of Cooked Fishmeal Chicken
-oredict.blockSolidSalmonCooked=Compressed Block of Cooked Chicken
-oredict.crateGt664DustSalmonCooked=Crate of Cooked Fishmeal Chicken
-oredict.crateGt64IngotSalmonCooked=Crate of Cooked Fishmeal Chicken Bars
-oredict.dustSalmonCooked=Cooked Fishmeal Chicken
-oredict.dustSmallSalmonCooked=Small Pile of Cooked Fishmeal Chicken
-oredict.dustTinySalmonCooked=Tiny Pile of Cooked Fishmeal Chicken
-oredict.dustDiv72SalmonCooked=1/72nd of a Pile of Cooked Fishmeal Chicken
-oredict.nuggetSalmonCooked=Cooked Chicken Nugget
-oredict.chunkGtSalmonCooked=Cooked Chicken Chunk
-oredict.billetSalmonCooked=Cooked Chicken Billet
-oredict.ingotSalmonCooked=Cooked Chicken Bar
+oredict.blockIngotSalmonCooked=Block of Cooked Salmon bars
+oredict.blockDustSalmonCooked=Block of Cooked Salmone Paste
+oredict.blockSolidSalmonCooked=Compressed Block of Cooked Salmon
+oredict.crateGt664DustSalmonCooked=Crate of Cooked Salmon Paste
+oredict.crateGt64IngotSalmonCooked=Crate of Cooked Salmon bars
+oredict.dustSalmonCooked=Cooked Salmon Paste
+oredict.dustSmallSalmonCooked=Small Pile of Cooked Salmon Paste
+oredict.dustTinySalmonCooked=Tiny Pile of Cooked Salmon Paste
+oredict.dustDiv72SalmonCooked=1/72nd of a Pile of Cooked Salmon Paste
+oredict.nuggetSalmonCooked=Cooked Salmon Nugget
+oredict.chunkGtSalmonCooked=Cooked Salmon Chunk
+oredict.billetSalmonCooked=Cooked Salmon Billet
+oredict.ingotSalmonCooked=Cooked Salmon Bar
