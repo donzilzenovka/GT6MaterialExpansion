@@ -69,6 +69,17 @@ public final class MiscMaterials {
         put("minecraft:dye", 4, MT.Lapis, U);
         put("minecraft:dye", 15, MT.Bone, U);
         put("minecraft:experience_bottle", 0, MT.Glass, U / 4, MT.Ma, U / 4);
+        // Composite structures: provisional recipe-scale quantities.
+        put("minecraft:bed", 0, MT.Wood, 3 * U, wool, 3 * U);
+        put("minecraft:brewing_stand", 0, MT.Stone, 3 * U, MT.Blaze, U);
+        put("minecraft:tnt_minecart", 0, MT.Fe, 5 * U,
+            MT.Gunpowder, 4 * U, MT.Paper, U);
+        put("minecraft:hopper_minecart", 0, MT.Fe, 10 * U);
+        put("minecraft:command_block_minecart", 0, MT.Fe, 5 * U, MT.Bedrock, U);
+        // Skull metadata: 0 skeleton, 1 wither, 2 zombie, 3 player, 4 creeper.
+        put("minecraft:skull", 2, MT.MeatRotten, U, MT.Bone, U);
+        put("minecraft:skull", 3, MT.MeatRaw, U, MT.Bone, U);
+        put("minecraft:skull", 4, plant, U, MT.Gunpowder, U / 9);
         put("minecraft:dragon_egg", 0, MT.Bedrock, U);
         put("minecraft:command_block", 0, MT.Bedrock, U);
     }
