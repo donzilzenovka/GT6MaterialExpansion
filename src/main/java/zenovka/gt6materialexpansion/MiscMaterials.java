@@ -98,15 +98,15 @@ public final class MiscMaterials {
         ItemStack stack = new ItemStack((Item) obj, 1, 0);
         OreDictItemData before = OreDictManager.INSTANCE.getItemData(stack);
         if (before == null || before.mMaterial == null) return;
-        OreDictMaterialStack[] parts = before.getAllMaterialStacks();
+        java.util.List<OreDictMaterialStack> parts = before.getAllMaterialStacks();
         for (OreDictMaterialStack part : parts)
             if (part.mMaterial == material) return;
-        OreDictMaterialStack[] extras = new OreDictMaterialStack[parts.length];
-        for (int i = 1; i < parts.length; i++)
-            extras[i - 1] = new OreDictMaterialStack(parts[i].mMaterial, parts[i].mAmount);
-        extras[parts.length - 1] = new OreDictMaterialStack(material, amount);
+        OreDictMaterialStack[] extras = new OreDictMaterialStack[parts.size()];
+        for (int i = 1; i < parts.size(); i++)
+            extras[i - 1] = new OreDictMaterialStack(parts.get(i).mMaterial, parts.get(i).mAmount);
+        extras[parts.size() - 1] = new OreDictMaterialStack(material, amount);
         boolean ok = OreDictManager.INSTANCE.setItemData(stack,
-            new OreDictItemData(parts[0].mMaterial, parts[0].mAmount, extras));
+            new OreDictItemData(parts.get(0).mMaterial, parts.get(0).mAmount, extras));
         FMLLog.info("[GT6MaterialExpansion] %s added chassis=%s", id, ok);
     }
 
