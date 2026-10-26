@@ -57,7 +57,7 @@ public final class MiscMaterials {
             MT.Redstone, U / 2, MT.NetherQuartz, U / 4);
 
         // Identical iron container regardless of fluid contents.
-        put("minecraft:water_bucket", 0, MT.Fe, 3 * U, MT.FreshWater, U);
+        put("minecraft:water_bucket", 0, MT.Fe, 3 * U, MT.H2O, U);
         put("minecraft:milk_bucket", 0, MT.Fe, 3 * U, MT.Milk, U);
         put("minecraft:lava_bucket", 0, MT.Fe, 3 * U, MT.Lava, U);
 
@@ -69,6 +69,13 @@ public final class MiscMaterials {
         put("minecraft:dye", 4, MT.Lapis, U);
         put("minecraft:dye", 15, MT.Bone, U);
         put("minecraft:experience_bottle", 0, MT.Glass, U / 4, MT.Ma, U / 4);
+        // Potion effect metadata/NBT does not change its glass and water contents.
+        put("minecraft:potion", 32767, MT.Glass, U / 4, MT.H2O, U);
+        put("minecraft:fermented_spider_eye", 0, organic, U / 4,
+            MT.Sugar, U / 4, MT.Biomass, U / 4);
+        put("minecraft:item_frame", 0, MT.Leather, U, MT.Wood, 4 * U);
+        supplement("minecraft:chest_minecart", MT.Fe, 5 * U);
+        supplement("minecraft:furnace_minecart", MT.Fe, 5 * U);
         // Composite structures: provisional recipe-scale quantities.
         put("minecraft:bed", 0, MT.Wood, 3 * U, wool, 3 * U);
         put("minecraft:brewing_stand", 0, MT.Stone, 3 * U, MT.Blaze, U);
@@ -82,6 +89,25 @@ public final class MiscMaterials {
         put("minecraft:skull", 4, plant, U, MT.Gunpowder, U / 9);
         put("minecraft:dragon_egg", 0, MT.Bedrock, U);
         put("minecraft:command_block", 0, MT.Bedrock, U);
+    }
+
+    /** Preserve existing components; only supplement carts lacking iron. */
+    private static void supplement(String id, OreDictMaterial material, long amount) {
+        Object obj = Item.itemRegistry.getObject(id);
+        if (!(obj instanceof Item)) return;
+        ItemStack stack = new ItemStack((Item) obj, 1, 0);
+        OreDictItemData before = OreDictManager.INSTANCE.getItemData(stack);
+        if (before == null || before.mMaterial == null) return;
+        OreDictMaterialStack[] parts = before.getAllMaterialStacks();
+        for (OreDictMaterialStack part : parts)
+            if (part.mMaterial == material) return;
+        OreDictMaterialStack[] extras = new OreDictMaterialStack[parts.length];
+        for (int i = 1; i < parts.length; i++)
+            extras[i - 1] = new OreDictMaterialStack(parts[i].mMaterial, parts[i].mAmount);
+        extras[parts.length - 1] = new OreDictMaterialStack(material, amount);
+        boolean ok = OreDictManager.INSTANCE.setItemData(stack,
+            new OreDictItemData(parts[0].mMaterial, parts[0].mAmount, extras));
+        FMLLog.info("[GT6MaterialExpansion] %s added chassis=%s", id, ok);
     }
 
     private static void put(String id, int meta, OreDictMaterial primary, long amount,
