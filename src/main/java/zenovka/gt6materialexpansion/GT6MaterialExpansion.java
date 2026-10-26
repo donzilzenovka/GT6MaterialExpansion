@@ -35,6 +35,7 @@ public final class GT6MaterialExpansion {
     public static OreDictMaterial Loam;
     public static OreDictMaterial Soil;
     public static OreDictMaterial PlantMatter;
+    public static OreDictMaterial Mycelium;
 	
     public static OreDictMaterial ChickenRaw;
     public static OreDictMaterial ChickenCooked;
@@ -50,6 +51,10 @@ public final class GT6MaterialExpansion {
         PlantMatter = OreDictMaterial.createMaterial(32026, "PlantMatter", "Plant Matter");
         PlantMatter.setDensity(0.45D);
         PlantMatter.setRGBa(90, 145, 55, 255);
+        Mycelium = OreDictMaterial.createMaterial(32027, "Mycelium", "Mycelium");
+        // Provisional bulk density; revisit against GT6 mushroom processing.
+        Mycelium.setDensity(0.25D);
+        Mycelium.setRGBa(170, 155, 125, 255);
         ChickenRaw = OreDictMaterial.createMaterial(32014, "ChickenRaw", "Raw Chicken");
         ChickenCooked = OreDictMaterial.createMaterial(32015, "ChickenCooked", "Cooked Chicken");
         BeefRaw = OreDictMaterial.createMaterial(32016, "BeefRaw", "Raw Beef");
@@ -190,6 +195,7 @@ public final class GT6MaterialExpansion {
         assignIfMissing("BiomesOPlenty:newBopGrass", 0, Loam, 9 * U);
         assignIfMissing("BiomesOPlenty:mud", 0, Soil, 9 * U);
         FloraMaterials.register(PlantMatter);
+        FungalMaterials.register(Mycelium);
         // Additional item associations will follow after pack-specific verification.
         overrideMeatItem("minecraft:chicken", 0, ChickenRaw);
         overrideMeatItem("minecraft:cooked_chicken", 0, ChickenCooked);
