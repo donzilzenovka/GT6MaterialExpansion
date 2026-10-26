@@ -40,6 +40,7 @@ public final class GT6MaterialExpansion {
     public static OreDictMaterial BeefRaw, BeefCooked;
     public static OreDictMaterial PorkRaw, PorkCooked;
     public static OreDictMaterial MuttonRaw, MuttonCooked;
+    public static OreDictMaterial CodRaw, CodCooked, SalmonRaw, SalmonCooked;
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -53,6 +54,14 @@ public final class GT6MaterialExpansion {
         PorkCooked = OreDictMaterial.createMaterial(32019, "PorkCooked", "Cooked Pork");
         MuttonRaw = OreDictMaterial.createMaterial(32020, "MuttonRaw", "Raw Mutton");
         MuttonCooked = OreDictMaterial.createMaterial(32021, "MuttonCooked", "Cooked Mutton");
+
+        CodRaw = OreDictMaterial.createMaterial(32022, "CodRaw", "Raw Cod");
+        CodCooked = OreDictMaterial.createMaterial(32023, "CodCooked", "Cooked Cod");
+        SalmonRaw = OreDictMaterial.createMaterial(32024, "SalmonRaw", "Raw Salmon");
+        SalmonCooked = OreDictMaterial.createMaterial(32025, "SalmonCooked", "Cooked Salmon");
+
+        configureFish(CodRaw, CodCooked, "Cod", 192, 174, 137, 181, 138, 87);
+        configureFish(SalmonRaw, SalmonCooked, "Salmon", 250, 142, 122, 205, 108, 82);
 
         configureMeat(ChickenRaw, ChickenCooked, "Chicken", 255, 185, 193, 190, 130, 83);
         configureMeat(BeefRaw, BeefCooked, "Beef", 170, 55, 65, 118, 65, 49);
@@ -187,6 +196,10 @@ public final class GT6MaterialExpansion {
         overrideMeatItem("gregtech:gt.multiitem.food", 1401, MuttonCooked);
         overrideMeatItem("gregtech:gt.multiitem.food", 1210, BeefRaw);
         overrideMeatItem("gregtech:gt.multiitem.food", 1211, BeefCooked);
+        overrideMeatItem("minecraft:fish", 0, CodRaw);
+        overrideMeatItem("minecraft:cooked_fished", 0, CodCooked);
+        overrideMeatItem("minecraft:fish", 1, SalmonRaw);
+        overrideMeatItem("minecraft:cooked_fished", 1, SalmonCooked);
     }
 
     private static void configureMeat(OreDictMaterial raw, OreDictMaterial cooked,
@@ -195,6 +208,29 @@ public final class GT6MaterialExpansion {
         raw.setLocal("Raw " + name);
         raw.setRGBa(rr, rg, rb, 255);
         cooked.setDensity(MT.MeatRaw.mGramPerCubicCentimeter * 0.75D);
+        cooked.setLocal("Cooked " + name);
+        cooked.setRGBa(cr, cg, cb, 255);
+        for (OreDictMaterial material : new OreDictMaterial[] {raw, cooked}) {
+            material.put(TD.Properties.MEAT, TD.Properties.FOOD,
+                TD.Processing.MORTAR, TD.ItemGenerator.INGOTS,
+                TD.Processing.MELTING, TD.Processing.EXTRUDER,
+                TD.Processing.EXTRUDER_SIMPLE);
+            material.setPulver(material, U);
+            OP.dust.forceItemGeneration(material);
+            OP.dustSmall.forceItemGeneration(material);
+            OP.dustTiny.forceItemGeneration(material);
+            OP.dustDiv72.forceItemGeneration(material);
+        }
+        raw.setSmelting(cooked, U);
+        raw.setForging(cooked, U);
+    }
+
+    private static void configureFish(OreDictMaterial raw, OreDictMaterial cooked,
+            String name, int rr, int rg, int rb, int cr, int cg, int cb) {
+        raw.setDensity(MT.FishRaw.mGramPerCubicCentimeter);
+        raw.setLocal("Raw " + name);
+        raw.setRGBa(rr, rg, rb, 255);
+        cooked.setDensity(MT.FishRaw.mGramPerCubicCentimeter * 0.75D);
         cooked.setLocal("Cooked " + name);
         cooked.setRGBa(cr, cg, cb, 255);
         for (OreDictMaterial material : new OreDictMaterial[] {raw, cooked}) {
@@ -241,11 +277,51 @@ public final class GT6MaterialExpansion {
         ChickenFoodRecipes.register(MuttonRaw, MuttonCooked);
         overrideMeatMortarOutput("gregtech:gt.multiitem.food", 1400, MuttonRaw);
         overrideMeatMortarOutput("gregtech:gt.multiitem.food", 1210, BeefRaw);
+        registerFishProcessing(0, CodRaw, CodCooked);
+        registerFishProcessing(1, SalmonRaw, SalmonCooked);
     }
 
     private static void registerMeatProcessing(String itemName, OreDictMaterial raw, OreDictMaterial cooked) {
         overrideMeatMortarOutput(itemName, 0, raw);
         ChickenFoodRecipes.register(raw, cooked);
+    }
+
+    private static void registerFishProcessing(int metadata, OreDictMaterial raw, OreDictMaterial cooked) {
+        // GT6 fish mortar outputs may be one unit, rather than the meat recipe's two.
+        overrideFishMortarOutput(metadata, raw);
+        SpeciesFishRecipes.register(raw, cooked);
+    }
+
+    private static void overrideFishMortarOutput(int metadata, OreDictMaterial raw) {
+        Object registered = Item.itemRegistry.getObject("minecraft:fish");
+        if (!(registered instanceof Item)) return;
+        ItemStack fish = new ItemStack((Item)registered, 1, metadata);
+        Recipe candidate = null;
+        ItemStack replacement = null;
+        int matches = 0;
+        for (Recipe recipe : RM.Mortar.mRecipeList) {
+            if (recipe.mInputs == null || recipe.mOutputs == null
+                    || recipe.mInputs.length != 1 || recipe.mOutputs.length != 1) continue;
+            if (!ST.equal(recipe.mInputs[0], fish, true) || recipe.mInputs[0].stackSize != 1) continue;
+            for (long amount : new long[] {U, 2 * U}) {
+                ItemStack generic = OM.dust(MT.FishRaw, amount);
+                ItemStack specific = OM.dust(raw, amount);
+                if (generic != null && specific != null
+                        && ST.equal(recipe.mOutputs[0], generic, true)
+                        && recipe.mOutputs[0].stackSize == generic.stackSize) {
+                    candidate = recipe;
+                    replacement = specific;
+                    matches++;
+                    break;
+                }
+            }
+        }
+        if (matches == 1) {
+            candidate.mOutputs[0] = replacement;
+            FMLLog.info("[GT6MaterialExpansion] Fish metadata %d mortar output replaced", metadata);
+        } else {
+            FMLLog.info("[GT6MaterialExpansion] Fish metadata %d mortar matches=%d; unchanged", metadata, matches);
+        }
     }
 
     /** Replace only a unique, unambiguous GT6 generic-meat mortar recipe. */
