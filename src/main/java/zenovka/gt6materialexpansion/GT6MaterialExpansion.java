@@ -67,6 +67,16 @@ public final class GT6MaterialExpansion {
             TD.Processing.MELTING, TD.Processing.EXTRUDER,
             TD.Processing.EXTRUDER_SIMPLE);
         ChickenCooked.setPulver(ChickenCooked, U);
+        // GT6's processing tags alone do not generate the custom dust prefix items.
+        // These forms are required for the existing mortar output and shredder recycling.
+        OP.dust.forceItemGeneration(ChickenRaw);
+        OP.dustSmall.forceItemGeneration(ChickenRaw);
+        OP.dustTiny.forceItemGeneration(ChickenRaw);
+        OP.dustDiv72.forceItemGeneration(ChickenRaw);
+        OP.dust.forceItemGeneration(ChickenCooked);
+        OP.dustSmall.forceItemGeneration(ChickenCooked);
+        OP.dustTiny.forceItemGeneration(ChickenCooked);
+        OP.dustDiv72.forceItemGeneration(ChickenCooked);
         // Soil uses GT6 constituent masses, never a hardcoded kilogram value.
         // Nine-part ratio: 6 Stone, 2 Biomass, 1 Water.
         Soil.setMoleculeConfiguration(new OreDictConfigurationComponent(9,
