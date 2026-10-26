@@ -103,9 +103,35 @@ public final class MiscMaterials {
         for (int i = 0; i < additional.length; i++)
             additional[i] = new OreDictMaterialStack(
                 (OreDictMaterial) extras[2 * i], (Long) extras[2 * i + 1]);
+        ItemStack stack = new ItemStack(item, 1, meta);
+        logComposition(id, "before", OreDictManager.INSTANCE.getItemData(stack));
         boolean updated = OreDictManager.INSTANCE.setItemData(
-            new ItemStack(item, 1, meta), new OreDictItemData(primary, amount, additional));
+            stack, new OreDictItemData(primary, amount, additional));
         FMLLog.info("[GT6MaterialExpansion] Misc override %s:%d assigned=%s", id, meta, updated);
+        logComposition(id, "after", OreDictManager.INSTANCE.getItemData(stack));
+    }
+
+    /** Log the actual material lookup, not just the registration result. */
+    public static void diagnoseMinecarts() {
+        for (String id : new String[] {"minecraft:chest_minecart", "minecraft:furnace_minecart"}) {
+            Object obj = Item.itemRegistry.getObject(id);
+            if (!(obj instanceof Item)) {
+                FMLLog.info("[GT6MaterialExpansion] %s not found", id);
+                continue;
+            }
+            logComposition(id, "serverStarted",
+                OreDictManager.INSTANCE.getItemData(new ItemStack((Item) obj, 1, 0)));
+        }
+    }
+
+    private static void logComposition(String id, String phase, OreDictItemData data) {
+        if (data == null) {
+            FMLLog.info("[GT6MaterialExpansion] %s %s composition=<none>", id, phase);
+            return;
+        }
+        for (OreDictMaterialStack part : data.getAllMaterialStacks())
+            FMLLog.info("[GT6MaterialExpansion] %s %s material=%s amount=%d",
+                id, phase, String.valueOf(part.mMaterial), part.mAmount);
     }
 
     private static void put(String id, int meta, OreDictMaterial primary, long amount,
