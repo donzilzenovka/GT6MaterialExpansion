@@ -54,7 +54,6 @@ public final class GT6MaterialExpansion {
         Mycelium = OreDictMaterial.createMaterial(32027, "Mycelium", "Mycelium");
         // Provisional bulk density; revisit against GT6 mushroom processing.
         Mycelium.setDensity(0.25D);
-        Mycelium.setRGBa(170, 155, 125, 255);
         ChickenRaw = OreDictMaterial.createMaterial(32014, "ChickenRaw", "Raw Chicken");
         ChickenCooked = OreDictMaterial.createMaterial(32015, "ChickenCooked", "Cooked Chicken");
         BeefRaw = OreDictMaterial.createMaterial(32016, "BeefRaw", "Raw Beef");
