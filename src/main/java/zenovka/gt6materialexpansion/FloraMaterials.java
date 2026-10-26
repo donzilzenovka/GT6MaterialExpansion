@@ -49,6 +49,12 @@ public final class FloraMaterials {
         for (int meta = 0; meta < 6; meta++)
             assignBlock("minecraft:double_plant", meta, plantMatter, null);
         assignBlock("minecraft:deadbush", 0, plantMatter, null);
+        for (int meta = 0; meta < 4; meta++)
+            assignBlock("minecraft:leaves", meta, plantMatter, null, U / 2);
+        for (int meta = 0; meta < 2; meta++)
+            assignBlock("minecraft:leaves2", meta, plantMatter, null, U / 2);
+        assignBlock("minecraft:vine", 0, plantMatter, null);
+        assignBlock("minecraft:waterlily", 0, plantMatter, null);
 
         for (String oreName : OreDictionary.getOreNames()) {
             boolean sapling = oreName.equals("treeSapling") || oreName.equals("sapling")
@@ -56,13 +62,21 @@ public final class FloraMaterials {
             boolean soft = oreName.equals("flower") || oreName.startsWith("flower")
                 || oreName.equals("itemGrass") || oreName.equals("itemGrassTall")
                 || oreName.equals("itemPlantRemains");
-            if (!sapling && !soft) continue;
+            boolean leaves = oreName.equals("treeLeaves") || oreName.startsWith("treeLeaves")
+                || oreName.equals("leaf") || oreName.equals("leaves");
+            boolean bale = oreName.equals("baleGrass") || oreName.equals("baleGrassDry")
+                || oreName.equals("baleGrassMoldy") || oreName.equals("baleGrassRotten");
+            boolean grass = oreName.equals("itemGrassDry") || oreName.equals("itemGrassMoldy")
+                || oreName.equals("itemGrassRotten");
+            boolean vine = oreName.equals("vine") || oreName.equals("itemVine")
+                || oreName.equals("lilyPad") || oreName.equals("waterlily");
+            if (!sapling && !soft && !leaves && !bale && !grass && !vine) continue;
             for (ItemStack stack : OreDictionary.getOres(oreName)) {
                 if (stack == null || stack.getItem() == null) continue;
                 // Wildcard registrations can represent mixed metadata. Never write wildcard data.
                 if (stack.getItemDamage() == OreDictionary.WILDCARD_VALUE) continue;
                 OreDictMaterial wood = sapling ? woodFor(oreName, stack) : null;
-                assign(stack, plantMatter, wood, oreName);
+                assign(stack, plantMatter, wood, oreName, bale ? 9 * U / 4 : leaves ? U / 2 : U / 4);
             }
         }
         FMLLog.info("[GT6MaterialExpansion] Flora composition scan complete; assigned %d stacks", seen.size());
@@ -71,6 +85,11 @@ public final class FloraMaterials {
     private static void assignBlock(String name, int meta, OreDictMaterial plant, OreDictMaterial wood) {
         Block block = Block.getBlockFromName(name);
         if (block != null) assign(new ItemStack(block, 1, meta), plant, wood, name);
+    }
+
+    private static void assignBlock(String name, int meta, OreDictMaterial plant, OreDictMaterial wood, long amount) {
+        Block block = Block.getBlockFromName(name);
+        if (block != null) assign(new ItemStack(block, 1, meta), plant, wood, name, amount);
     }
 
     private static OreDictMaterial woodFor(String oreName, ItemStack stack) {
@@ -91,6 +110,10 @@ public final class FloraMaterials {
     }
 
     private static void assign(ItemStack stack, OreDictMaterial plant, OreDictMaterial wood, String source) {
+        assign(stack, plant, wood, source, U / 4);
+    }
+
+    private static void assign(ItemStack stack, OreDictMaterial plant, OreDictMaterial wood, String source, long amount) {
         if (stack == null || stack.getItem() == null) return;
         if (stack.getItemDamage() == OreDictionary.WILDCARD_VALUE) return;
         Item item = stack.getItem();
@@ -101,8 +124,8 @@ public final class FloraMaterials {
         if (OreDictManager.INSTANCE.getItemData(single) != null) return;
         // A stick is U/2 in GT6. Saplings contain that amount of wood.
         OreDictItemData data = wood == null
-            ? new OreDictItemData(plant, U / 4)
-            : new OreDictItemData(plant, U / 4, new OreDictMaterialStack(wood, U / 2));
+            ? new OreDictItemData(plant, amount)
+            : new OreDictItemData(plant, amount, new OreDictMaterialStack(wood, U / 2));
         OreDictManager.INSTANCE.addItemData(single, data);
         if (OreDictManager.INSTANCE.getItemData(single) != null) {
             seen.add(key);
