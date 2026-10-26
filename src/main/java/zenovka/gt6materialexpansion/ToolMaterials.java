@@ -4,6 +4,7 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import gregapi.item.multiitem.MultiItemTool;
+import gregapi.data.MT;
 import gregapi.oredict.OreDictItemData;
 import gregapi.oredict.OreDictMaterial;
 import gregapi.oredict.OreDictMaterialStack;
@@ -82,10 +83,17 @@ public final class ToolMaterials {
         long max = MultiItemTool.getToolMaxDamage(stack);
         if (max <= 0) return;
         long remaining = Math.max(0L, max - MultiItemTool.getToolDamage(stack));
+        OreDictMaterial head = MultiItemTool.getPrimaryMaterial(stack);
+        OreDictMaterial shaft = MultiItemTool.getSecondaryMaterial(stack);
+        // Only change unambiguously identified head material. If both parts use
+        // the same material, aggregated recipe composition cannot separate them.
+        if (head == null || head == MT.NULL || head == shaft) return;
         List<OreDictMaterialStack> adjusted = new ArrayList<OreDictMaterialStack>();
         for (OreDictMaterialStack component : original) {
             if (component == null || component.mMaterial == null || component.mAmount < 0) return;
-            long amount = UT.Code.units(remaining, max, component.mAmount, false);
+            long amount = component.mMaterial == head
+                ? UT.Code.units(remaining, max, component.mAmount, false)
+                : component.mAmount;
             if (amount > 0) adjusted.add(OM.stack(component.mMaterial, amount));
         }
         List<OreDictMaterialStack> current = OreDictMaterialStack.loadList(RECYCLING_TAG, tag);
