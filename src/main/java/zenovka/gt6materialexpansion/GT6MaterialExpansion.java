@@ -37,6 +37,9 @@ public final class GT6MaterialExpansion {
 	
     public static OreDictMaterial ChickenRaw;
     public static OreDictMaterial ChickenCooked;
+    public static OreDictMaterial BeefRaw, BeefCooked;
+    public static OreDictMaterial PorkRaw, PorkCooked;
+    public static OreDictMaterial MuttonRaw, MuttonCooked;
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -44,39 +47,17 @@ public final class GT6MaterialExpansion {
         Soil = OreDictMaterial.createMaterial(32013, "Soil", "Soil");
         ChickenRaw = OreDictMaterial.createMaterial(32014, "ChickenRaw", "Raw Chicken");
         ChickenCooked = OreDictMaterial.createMaterial(32015, "ChickenCooked", "Cooked Chicken");
-        // Test material: inherit raw meat density; no recipes or processing registered.
-        ChickenRaw.setDensity(MT.MeatRaw.mGramPerCubicCentimeter);
-        ChickenRaw.setLocal("Raw Chicken");
-        ChickenRaw.setRGBa(255, 185, 193, 255);
-        // GT6 food mortar recipes inspect the MEAT material tag, not merely ore names.
-        ChickenRaw.put(TD.Properties.MEAT, TD.Properties.FOOD,
-            TD.Processing.MORTAR, TD.ItemGenerator.INGOTS,
-            TD.Processing.MELTING, TD.Processing.EXTRUDER,
-            TD.Processing.EXTRUDER_SIMPLE);
-        // Shredder recycling follows the pulverisation target of each constituent.
-        ChickenRaw.setPulver(ChickenRaw, U);
-        // Let GT6 generate processing recipes from species-specific targets.
-        ChickenRaw.setSmelting(ChickenCooked, U);
-        ChickenRaw.setForging(ChickenCooked, U);
-        // Preserve species identity while inheriting GT6's generic cooked-meat recipes.
-        ChickenCooked.setDensity(MT.MeatRaw.mGramPerCubicCentimeter * 0.75D);
-        ChickenCooked.setLocal("Cooked Chicken");
-        ChickenCooked.setRGBa(190, 130, 83, 255);
-        ChickenCooked.put(TD.Properties.MEAT, TD.Properties.FOOD,
-            TD.Processing.MORTAR, TD.ItemGenerator.INGOTS,
-            TD.Processing.MELTING, TD.Processing.EXTRUDER,
-            TD.Processing.EXTRUDER_SIMPLE);
-        ChickenCooked.setPulver(ChickenCooked, U);
-        // GT6's processing tags alone do not generate the custom dust prefix items.
-        // These forms are required for the existing mortar output and shredder recycling.
-        OP.dust.forceItemGeneration(ChickenRaw);
-        OP.dustSmall.forceItemGeneration(ChickenRaw);
-        OP.dustTiny.forceItemGeneration(ChickenRaw);
-        OP.dustDiv72.forceItemGeneration(ChickenRaw);
-        OP.dust.forceItemGeneration(ChickenCooked);
-        OP.dustSmall.forceItemGeneration(ChickenCooked);
-        OP.dustTiny.forceItemGeneration(ChickenCooked);
-        OP.dustDiv72.forceItemGeneration(ChickenCooked);
+        BeefRaw = OreDictMaterial.createMaterial(32016, "BeefRaw", "Raw Beef");
+        BeefCooked = OreDictMaterial.createMaterial(32017, "BeefCooked", "Cooked Beef");
+        PorkRaw = OreDictMaterial.createMaterial(32018, "PorkRaw", "Raw Pork");
+        PorkCooked = OreDictMaterial.createMaterial(32019, "PorkCooked", "Cooked Pork");
+        MuttonRaw = OreDictMaterial.createMaterial(32020, "MuttonRaw", "Raw Mutton");
+        MuttonCooked = OreDictMaterial.createMaterial(32021, "MuttonCooked", "Cooked Mutton");
+
+        configureMeat(ChickenRaw, ChickenCooked, "Chicken", 255, 185, 193, 190, 130, 83);
+        configureMeat(BeefRaw, BeefCooked, "Beef", 170, 55, 65, 118, 65, 49);
+        configureMeat(PorkRaw, PorkCooked, "Pork", 239, 155, 160, 186, 111, 81);
+        configureMeat(MuttonRaw, MuttonCooked, "Mutton", 177, 77, 87, 137, 81, 57);
         // Soil uses GT6 constituent masses, never a hardcoded kilogram value.
         // Nine-part ratio: 6 Stone, 2 Biomass, 1 Water.
         Soil.setMoleculeConfiguration(new OreDictConfigurationComponent(9,
@@ -196,93 +177,92 @@ public final class GT6MaterialExpansion {
         assignIfMissing("BiomesOPlenty:newBopGrass", 0, Loam, 9 * U);
         assignIfMissing("BiomesOPlenty:mud", 0, Soil, 9 * U);
         // Additional item associations will follow after pack-specific verification.
-        testChickenOverride();
-        testCookedChickenOverride();
-        diagnoseChickenProcessing();
-        // Mortar recipes may be populated by GT6 after postInit.
-        // Keep the early diagnostics, but defer any recipe mutation.
+        overrideMeatItem("minecraft:chicken", ChickenRaw, true);
+        overrideMeatItem("minecraft:cooked_chicken", ChickenCooked, false);
+        overrideMeatItem("minecraft:beef", BeefRaw, true);
+        overrideMeatItem("minecraft:cooked_beef", BeefCooked, false);
+        overrideMeatItem("minecraft:porkchop", PorkRaw, true);
+        overrideMeatItem("minecraft:cooked_porkchop", PorkCooked, false);
+        // Vanilla 1.7.10 has no mutton; these are optional modded item associations.
+        overrideMeatItem("etfuturum:mutton_raw", MuttonRaw, true);
+        overrideMeatItem("etfuturum:mutton_cooked", MuttonCooked, false);
     }
 
-    /** Diagnostic only: use GT6's public API; do not bypass protected associations. */
-    private static void testChickenOverride() {
-        Object registered = Item.itemRegistry.getObject("minecraft:chicken");
-        if (!(registered instanceof Item)) {
-            FMLLog.info("[GT6MaterialExpansion] Chicken override test: vanilla item missing");
-            return;
+    private static void configureMeat(OreDictMaterial raw, OreDictMaterial cooked,
+            String name, int rr, int rg, int rb, int cr, int cg, int cb) {
+        raw.setDensity(MT.MeatRaw.mGramPerCubicCentimeter);
+        raw.setLocal("Raw " + name);
+        raw.setRGBa(rr, rg, rb, 255);
+        cooked.setDensity(MT.MeatRaw.mGramPerCubicCentimeter * 0.75D);
+        cooked.setLocal("Cooked " + name);
+        cooked.setRGBa(cr, cg, cb, 255);
+        for (OreDictMaterial material : new OreDictMaterial[] {raw, cooked}) {
+            material.put(TD.Properties.MEAT, TD.Properties.FOOD,
+                TD.Processing.MORTAR, TD.ItemGenerator.INGOTS,
+                TD.Processing.MELTING, TD.Processing.EXTRUDER,
+                TD.Processing.EXTRUDER_SIMPLE);
+            material.setPulver(material, U);
+            OP.dust.forceItemGeneration(material);
+            OP.dustSmall.forceItemGeneration(material);
+            OP.dustTiny.forceItemGeneration(material);
+            OP.dustDiv72.forceItemGeneration(material);
         }
-        ItemStack chicken = new ItemStack((Item) registered, 1, 0);
-        OreDictItemData before = OreDictManager.INSTANCE.getItemData(chicken);
-        FMLLog.info("[GT6MaterialExpansion] Chicken override: before=%s",
-            describeMaterial(before));
-        // Preserve the original GT6 amount, if present, to isolate association behaviour.
-        long amount = before != null && before.mMaterial != null
-            ? before.mMaterial.mAmount : U;
-        boolean accepted = OreDictManager.INSTANCE.setItemData(
-            chicken, new OreDictItemData(ChickenRaw, amount,
-                new OreDictMaterialStack(MT.Bone, U / 9)));
-        OreDictItemData after = OreDictManager.INSTANCE.getItemData(chicken);
-        FMLLog.info("[GT6MaterialExpansion] Chicken override: accepted=%s, after=%s",
-            accepted, describeMaterial(after));
-        if (!accepted) {
-            FMLLog.info("[GT6MaterialExpansion] Chicken override refused by GT6; no forced mutation attempted");
-        }
+        raw.setSmelting(cooked, U);
+        raw.setForging(cooked, U);
     }
 
-    /** Mirror raw chicken's GT6 material amount, preserving the existing cooked item. */
-    private static void testCookedChickenOverride() {
-        Object registered = Item.itemRegistry.getObject("minecraft:cooked_chicken");
-        if (!(registered instanceof Item)) {
-            FMLLog.info("[GT6MaterialExpansion] Cooked chicken override: vanilla item missing");
-            return;
-        }
-        ItemStack chicken = new ItemStack((Item) registered, 1, 0);
-        OreDictItemData before = OreDictManager.INSTANCE.getItemData(chicken);
-        FMLLog.info("[GT6MaterialExpansion] Cooked chicken override: before=%s",
-            describeMaterial(before));
-        boolean accepted = OreDictManager.INSTANCE.setItemData(
-            chicken, new OreDictItemData(ChickenCooked, 2 * U));
-        OreDictItemData after = OreDictManager.INSTANCE.getItemData(chicken);
-        FMLLog.info("[GT6MaterialExpansion] Cooked chicken override: accepted=%s, after=%s",
-            accepted, describeMaterial(after));
+    private static void overrideMeatItem(String registryName, OreDictMaterial material, boolean raw) {
+        Object registered = Item.itemRegistry.getObject(registryName);
+        if (!(registered instanceof Item)) return;
+        ItemStack stack = new ItemStack((Item)registered, 1, 0);
+        OreDictItemData before = OreDictManager.INSTANCE.getItemData(stack);
+        long amount = raw && before != null && before.mMaterial != null
+            ? before.mMaterial.mAmount : 2 * U;
+        OreDictItemData replacement = raw
+            ? new OreDictItemData(material, amount, new OreDictMaterialStack(MT.Bone, U / 9))
+            : new OreDictItemData(material, 2 * U);
+        boolean accepted = OreDictManager.INSTANCE.setItemData(stack, replacement);
+        FMLLog.info("[GT6MaterialExpansion] %s material association accepted=%s", registryName, accepted);
     }
 
     @EventHandler
     public void serverStarted(FMLServerStartedEvent event) {
-        FMLLog.info("[GT6MaterialExpansion] Chicken mortar: checking after server startup");
-        overrideChickenMortarOutput();
-        ChickenFoodRecipes.register(ChickenRaw, ChickenCooked);
+        registerMeatProcessing("minecraft:chicken", ChickenRaw, ChickenCooked);
+        registerMeatProcessing("minecraft:beef", BeefRaw, BeefCooked);
+        registerMeatProcessing("minecraft:porkchop", PorkRaw, PorkCooked);
+        registerMeatProcessing("etfuturum:mutton_raw", MuttonRaw, MuttonCooked);
     }
 
-    /** Change only the already-registered vanilla chicken mortar output. */
-    private static void overrideChickenMortarOutput() {
-        Object registered = Item.itemRegistry.getObject("minecraft:chicken");
+    private static void registerMeatProcessing(String itemName, OreDictMaterial raw, OreDictMaterial cooked) {
+        overrideMeatMortarOutput(itemName, raw);
+        ChickenFoodRecipes.register(raw, cooked);
+    }
+
+    /** Replace only a unique, unambiguous GT6 generic-meat mortar recipe. */
+    private static void overrideMeatMortarOutput(String registryName, OreDictMaterial raw) {
+        Object registered = Item.itemRegistry.getObject(registryName);
         if (!(registered instanceof Item)) return;
-        ItemStack chicken = new ItemStack((Item)registered, 1, 0);
+        ItemStack item = new ItemStack((Item)registered, 1, 0);
         ItemStack generic = OM.dust(MT.MeatRaw, 2 * U);
-        ItemStack specific = OM.dust(ChickenRaw, 2 * U);
-        if (generic == null || specific == null) {
-            FMLLog.info("[GT6MaterialExpansion] Chicken mortar: output unavailable; unchanged");
-            return;
-        }
+        ItemStack specific = OM.dust(raw, 2 * U);
+        if (generic == null || specific == null) return;
         Recipe candidate = null;
         int matches = 0;
         for (Recipe recipe : RM.Mortar.mRecipeList) {
             if (recipe.mInputs == null || recipe.mOutputs == null
                     || recipe.mInputs.length != 1 || recipe.mOutputs.length != 1) continue;
-            if (!ST.equal(recipe.mInputs[0], chicken, true)) continue;
-            if (recipe.mInputs[0].stackSize != 1) continue;
-            if (!ST.equal(recipe.mOutputs[0], generic, true)) continue;
-            if (recipe.mOutputs[0].stackSize != generic.stackSize) continue;
+            if (!ST.equal(recipe.mInputs[0], item, true) || recipe.mInputs[0].stackSize != 1) continue;
+            if (!ST.equal(recipe.mOutputs[0], generic, true)
+                    || recipe.mOutputs[0].stackSize != generic.stackSize) continue;
             candidate = recipe;
             matches++;
         }
-        if (matches != 1) {
-            FMLLog.info("[GT6MaterialExpansion] Chicken mortar: expected one vanilla recipe, found %d; unchanged", matches);
-            return;
+        if (matches == 1) {
+            candidate.mOutputs[0] = specific;
+            FMLLog.info("[GT6MaterialExpansion] %s mortar now outputs species meat", registryName);
+        } else {
+            FMLLog.info("[GT6MaterialExpansion] %s mortar expected one generic recipe, found %d; unchanged", registryName, matches);
         }
-        // GT6 Recipe explicitly permits output-array changes without reindexing inputs.
-        candidate.mOutputs[0] = specific;
-        FMLLog.info("[GT6MaterialExpansion] Chicken mortar: replaced generic output with %s", describeStack(specific));
     }
 
     /** Read-only diagnostics for generated dust and shredder pulverisation targets. */
