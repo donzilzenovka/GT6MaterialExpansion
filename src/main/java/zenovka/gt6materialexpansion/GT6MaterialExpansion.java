@@ -177,13 +177,16 @@ public final class GT6MaterialExpansion {
         assignIfMissing("BiomesOPlenty:newBopGrass", 0, Loam, 9 * U);
         assignIfMissing("BiomesOPlenty:mud", 0, Soil, 9 * U);
         // Additional item associations will follow after pack-specific verification.
-        overrideMeatItem("minecraft:chicken", ChickenRaw, true);
-        overrideMeatItem("minecraft:cooked_chicken", ChickenCooked, false);
-        overrideMeatItem("minecraft:beef", BeefRaw, true);
-        overrideMeatItem("minecraft:cooked_beef", BeefCooked, false);
-        overrideMeatItem("minecraft:porkchop", PorkRaw, true);
-        overrideMeatItem("minecraft:cooked_porkchop", PorkCooked, false);
-        // Mutton item association awaits the actual modded registry names.
+        overrideMeatItem("minecraft:chicken", 0, ChickenRaw);
+        overrideMeatItem("minecraft:cooked_chicken", 0, ChickenCooked);
+        overrideMeatItem("minecraft:beef", 0, BeefRaw);
+        overrideMeatItem("minecraft:cooked_beef", 0, BeefCooked);
+        overrideMeatItem("minecraft:porkchop", 0, PorkRaw);
+        overrideMeatItem("minecraft:cooked_porkchop", 0, PorkCooked);
+        overrideMeatItem("gregtech:gt.multiitem.food", 1400, MuttonRaw);
+        overrideMeatItem("gregtech:gt.multiitem.food", 1401, MuttonCooked);
+        overrideMeatItem("gregtech:gt.multiitem.food", 1210, BeefRaw);
+        overrideMeatItem("gregtech:gt.multiitem.food", 1211, BeefCooked);
     }
 
     private static void configureMeat(OreDictMaterial raw, OreDictMaterial cooked,
@@ -209,18 +212,25 @@ public final class GT6MaterialExpansion {
         raw.setForging(cooked, U);
     }
 
-    private static void overrideMeatItem(String registryName, OreDictMaterial material, boolean raw) {
+    private static void overrideMeatItem(String registryName, int metadata, OreDictMaterial material) {
         Object registered = Item.itemRegistry.getObject(registryName);
-        if (!(registered instanceof Item)) return;
-        ItemStack stack = new ItemStack((Item)registered, 1, 0);
+        if (!(registered instanceof Item)) {
+            FMLLog.info("[GT6MaterialExpansion] Missing meat item %s:%d", registryName, metadata);
+            return;
+        }
+        ItemStack stack = new ItemStack((Item)registered, 1, metadata);
         OreDictItemData before = OreDictManager.INSTANCE.getItemData(stack);
-        long amount = raw && before != null && before.mMaterial != null
-            ? before.mMaterial.mAmount : 2 * U;
-        OreDictItemData replacement = raw
-            ? new OreDictItemData(material, amount, new OreDictMaterialStack(MT.Bone, U / 9))
-            : new OreDictItemData(material, 2 * U);
+        if (before == null || before.mMaterial == null) {
+            FMLLog.info("[GT6MaterialExpansion] No original meat composition for %s:%d; unchanged",
+                registryName, metadata);
+            return;
+        }
+        // Replace the primary meat only; retain GT6's original bone and other byproducts.
+        OreDictItemData replacement = new OreDictItemData(material,
+            before.mMaterial.mAmount, before.mByProducts);
         boolean accepted = OreDictManager.INSTANCE.setItemData(stack, replacement);
-        FMLLog.info("[GT6MaterialExpansion] %s material association accepted=%s", registryName, accepted);
+        FMLLog.info("[GT6MaterialExpansion] %s:%d meat association accepted=%s, byproducts=%d",
+            registryName, metadata, accepted, before.mByProducts.length);
     }
 
     @EventHandler
@@ -229,18 +239,20 @@ public final class GT6MaterialExpansion {
         registerMeatProcessing("minecraft:beef", BeefRaw, BeefCooked);
         registerMeatProcessing("minecraft:porkchop", PorkRaw, PorkCooked);
         ChickenFoodRecipes.register(MuttonRaw, MuttonCooked);
+        overrideMeatMortarOutput("gregtech:gt.multiitem.food", 1400, MuttonRaw);
+        overrideMeatMortarOutput("gregtech:gt.multiitem.food", 1210, BeefRaw);
     }
 
     private static void registerMeatProcessing(String itemName, OreDictMaterial raw, OreDictMaterial cooked) {
-        overrideMeatMortarOutput(itemName, raw);
+        overrideMeatMortarOutput(itemName, 0, raw);
         ChickenFoodRecipes.register(raw, cooked);
     }
 
     /** Replace only a unique, unambiguous GT6 generic-meat mortar recipe. */
-    private static void overrideMeatMortarOutput(String registryName, OreDictMaterial raw) {
+    private static void overrideMeatMortarOutput(String registryName, int metadata, OreDictMaterial raw) {
         Object registered = Item.itemRegistry.getObject(registryName);
         if (!(registered instanceof Item)) return;
-        ItemStack item = new ItemStack((Item)registered, 1, 0);
+        ItemStack item = new ItemStack((Item)registered, 1, metadata);
         ItemStack generic = OM.dust(MT.MeatRaw, 2 * U);
         ItemStack specific = OM.dust(raw, 2 * U);
         if (generic == null || specific == null) return;
