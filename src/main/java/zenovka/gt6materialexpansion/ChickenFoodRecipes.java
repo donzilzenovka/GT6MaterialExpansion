@@ -19,11 +19,11 @@ import static gregapi.data.CS.*;
 public final class ChickenFoodRecipes {
     private ChickenFoodRecipes() {}
 
-    private static boolean registered;
+    private static final java.util.Set<OreDictMaterial> registered = new java.util.HashSet<OreDictMaterial>();
 
     public static void register(OreDictMaterial raw, OreDictMaterial cooked) {
-        if (registered) return;
-        registered = true;
+        if (raw == null || cooked == null) throw new IllegalArgumentException("Meat materials must be registered first");
+        if (!registered.add(raw)) return;
 
         // Match Loader_Recipes_Food's compressor conversions, including IC2.
         OreDictPrefix[] input = {OP.dustTiny, OP.dustSmall, OP.dust};
