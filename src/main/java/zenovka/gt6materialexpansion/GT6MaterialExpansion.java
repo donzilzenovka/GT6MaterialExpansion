@@ -274,7 +274,7 @@ public final class GT6MaterialExpansion {
         registerMeatProcessing("minecraft:chicken", ChickenRaw, ChickenCooked);
         registerMeatProcessing("minecraft:beef", BeefRaw, BeefCooked);
         registerMeatProcessing("minecraft:porkchop", PorkRaw, PorkCooked);
-        ChickenFoodRecipes.register(MuttonRaw, MuttonCooked);
+        SpeciesFoodRecipes.register(MuttonRaw, MuttonCooked, MT.MeatRotten);
         overrideMeatMortarOutput("gregtech:gt.multiitem.food", 1400, MuttonRaw);
         overrideMeatMortarOutput("gregtech:gt.multiitem.food", 1210, BeefRaw);
         registerFishProcessing(0, CodRaw, CodCooked);
@@ -283,13 +283,13 @@ public final class GT6MaterialExpansion {
 
     private static void registerMeatProcessing(String itemName, OreDictMaterial raw, OreDictMaterial cooked) {
         overrideMeatMortarOutput(itemName, 0, raw);
-        ChickenFoodRecipes.register(raw, cooked);
+        SpeciesFoodRecipes.register(raw, cooked, MT.MeatRotten);
     }
 
     private static void registerFishProcessing(int metadata, OreDictMaterial raw, OreDictMaterial cooked) {
         // GT6 fish mortar outputs may be one unit, rather than the meat recipe's two.
         overrideFishMortarOutput(metadata, raw);
-        SpeciesFishRecipes.register(raw, cooked);
+        SpeciesFoodRecipes.register(raw, cooked, MT.FishRotten);
     }
 
     private static void overrideFishMortarOutput(int metadata, OreDictMaterial raw) {
