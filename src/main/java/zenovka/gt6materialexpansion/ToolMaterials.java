@@ -8,6 +8,10 @@ import gregapi.oredict.OreDictItemData;
 import gregapi.oredict.OreDictMaterial;
 import gregapi.oredict.OreDictMaterialStack;
 import gregapi.util.OM;
+import gregapi.util.UT;
+import cpw.mods.fml.common.gameevent.TickEvent;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -26,11 +30,14 @@ import java.util.Map;
  */
 public final class ToolMaterials {
     private static final String RECYCLING_TAG = "gt.recycling.mats";
+    private static final String ORIGINAL_TAG = "zenovka.original.mats";
 
     private ToolMaterials() {}
 
     public static void register() {
-        FMLCommonHandler.instance().bus().register(new ToolMaterials());
+        ToolMaterials handler = new ToolMaterials();
+        FMLCommonHandler.instance().bus().register(handler);
+        MinecraftForge.EVENT_BUS.register(handler);
     }
 
     @SubscribeEvent
@@ -45,8 +52,55 @@ public final class ToolMaterials {
         if (components == null || components.isEmpty()) return;
 
         NBTTagCompound tag = existing == null ? new NBTTagCompound() : existing;
-        OreDictMaterialStack.saveList(RECYCLING_TAG, tag, components);
+        OreDictMaterialStack.saveList(ORIGINAL_TAG, tag, components);
         result.setTagCompound(tag);
+        synchronize(result);
+    }
+
+
+    /** Refresh player-held tools on the server; no global item registry or coremod. */
+    @SubscribeEvent
+    public void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || event.player.worldObj.isRemote) return;
+        for (int slot = 0; slot < event.player.inventory.getSizeInventory(); slot++) {
+            synchronize(event.player.inventory.getStackInSlot(slot));
+        }
+    }
+
+    /** Ensure the displayed composition is current when the tooltip is requested. */
+    @SubscribeEvent
+    public void onTooltip(ItemTooltipEvent event) {
+        synchronize(event.itemStack);
+    }
+
+    private static void synchronize(ItemStack stack) {
+        if (stack == null || !(stack.getItem() instanceof MultiItemTool)) return;
+        NBTTagCompound tag = stack.getTagCompound();
+        if (tag == null || !tag.hasKey(ORIGINAL_TAG)) return;
+        List<OreDictMaterialStack> original = OreDictMaterialStack.loadList(ORIGINAL_TAG, tag);
+        if (original.isEmpty()) return;
+        long max = MultiItemTool.getToolMaxDamage(stack);
+        if (max <= 0) return;
+        long remaining = Math.max(0L, max - MultiItemTool.getToolDamage(stack));
+        List<OreDictMaterialStack> adjusted = new ArrayList<OreDictMaterialStack>();
+        for (OreDictMaterialStack component : original) {
+            if (component == null || component.mMaterial == null || component.mAmount < 0) return;
+            long amount = UT.Code.units(remaining, max, component.mAmount, false);
+            if (amount > 0) adjusted.add(OM.stack(component.mMaterial, amount));
+        }
+        List<OreDictMaterialStack> current = OreDictMaterialStack.loadList(RECYCLING_TAG, tag);
+        if (sameMaterials(current, adjusted)) return;
+        OreDictMaterialStack.saveList(RECYCLING_TAG, tag, adjusted);
+        stack.setTagCompound(tag);
+    }
+
+    private static boolean sameMaterials(List<OreDictMaterialStack> left, List<OreDictMaterialStack> right) {
+        if (left.size() != right.size()) return false;
+        for (int i = 0; i < left.size(); i++) {
+            OreDictMaterialStack a = left.get(i), b = right.get(i);
+            if (a.mMaterial != b.mMaterial || a.mAmount != b.mAmount) return false;
+        }
+        return true;
     }
 
     /**
