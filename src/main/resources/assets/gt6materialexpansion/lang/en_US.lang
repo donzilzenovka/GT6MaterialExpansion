@@ -1,4 +1,30 @@
 # GT6-generated material forms
+
+oredict.blockIngotChickenRaw=Block of Raw Chicken bars
+oredict.blockDustChickenRaw=Block of Raw Minced Chicken
+oredict.blockSolidChickenRaw=Compressed Block of Raw Chicken
+oredict.crateGt664DustChickenRaw=Crate of Raw Minced Chicken
+oredict.crateGt64IngotChickenRaw=Crate of Raw Minced Chicken Bars
 oredict.dustChickenRaw=Raw Minced Chicken
 oredict.dustSmallChickenRaw=Small Pile of Raw Minced Chicken
 oredict.dustTinyChickenRaw=Tiny Pile of Raw Minced Chicken
+oredict.dustDiv72ChickenRaw=1/72nd of a Pile of Raw Minced Chicken
+oredict.nuggetChickenRaw=Raw Chicken Nugget
+oredict.chunkGtChickenRaw=Raw Chicken Chunk
+oredict.billetChickenRaw=Raw Chicken Billet
+oredict.ingotChivkenRaw=Raw Chicken Bar
+
+oredict.blockIngotChickenCooked=Block of Cooked Chicken bars
+oredict.blockDustChickenCooked=Block of Cooked Minced Chicken
+oredict.blockSolidChickenCooked=Compressed Block of Cooked Chicken
+oredict.crateGt664DustChickenCooked=Crate of Cooked Minced Chicken
+oredict.crateGt64IngotChickenCooked=Crate of Cooked Minced Chicken Bars
+oredict.dustChickenCooked=Cooked Minced Chicken
+oredict.dustSmallChickenCooked=Small Pile of Cooked Minced Chicken
+oredict.dustTinyChickenCooked=Tiny Pile of Cooked Minced Chicken
+oredict.dustDiv72ChickenCooked=1/72nd of a Pile of Cooked Minced Chicken
+oredict.nuggetChickenCooked=Cooked Chicken Nugget
+oredict.chunkGtChickenCooked=Cooked Chicken Chunk
+oredict.billetChickenCooked=Cooked Chicken Billet
+oredict.ingotChivkenCooked=Cooked Chicken Bar
+
