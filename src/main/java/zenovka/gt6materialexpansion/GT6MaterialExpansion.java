@@ -264,37 +264,11 @@ public final class GT6MaterialExpansion {
             FMLLog.info("[GT6MaterialExpansion] Chicken mortar: output unavailable; unchanged");
             return;
         }
-        FMLLog.info("[GT6MaterialExpansion] Chicken mortar diagnostic: total recipes=%d", RM.Mortar.mRecipeList.size());
-        int inputMatches = 0;
-        int outputMatches = 0;
-        for (Recipe recipe : RM.Mortar.mRecipeList) {
-            if (recipe.mInputs == null) continue;
-            for (ItemStack input : recipe.mInputs) {
-                if (input == null || input.getItem() != chicken.getItem()
-                        || input.getItemDamage() != chicken.getItemDamage()) continue;
-                inputMatches++;
-                boolean expectedOutput = recipe.mOutputs != null
-                    && recipe.mOutputs.length == 1 && recipe.mOutputs[0] != null
-                    && ST.equal(recipe.mOutputs[0], generic, true)
-                    && recipe.mOutputs[0].stackSize == generic.stackSize;
-                if (expectedOutput) outputMatches++;
-                StringBuilder outputs = new StringBuilder();
-                if (recipe.mOutputs != null) for (ItemStack output : recipe.mOutputs) {
-                    if (outputs.length() > 0) outputs.append(", ");
-                    outputs.append(describeStack(output));
-                }
-                FMLLog.info("[GT6MaterialExpansion] Chicken mortar diagnostic: input=%s inputs=%d outputs=%d outputStacks=[%s] expectedOutput=%s enabled=%s",
-                    describeStack(input), recipe.mInputs.length,
-                    recipe.mOutputs == null ? -1 : recipe.mOutputs.length,
-                    outputs.toString(), expectedOutput, recipe.mEnabled);
-            }
-        }
-        FMLLog.info("[GT6MaterialExpansion] Chicken mortar diagnostic: chickenInputs=%d expectedOutputs=%d",
-            inputMatches, outputMatches);
         Recipe candidate = null;
         int matches = 0;
         for (Recipe recipe : RM.Mortar.mRecipeList) {
-            if (recipe.mInputs.length != 1 || recipe.mOutputs.length != 1) continue;
+            if (recipe.mInputs == null || recipe.mOutputs == null
+                    || recipe.mInputs.length != 1 || recipe.mOutputs.length != 1) continue;
             if (!ST.equal(recipe.mInputs[0], chicken, true)) continue;
             if (recipe.mInputs[0].stackSize != 1) continue;
             if (!ST.equal(recipe.mOutputs[0], generic, true)) continue;
