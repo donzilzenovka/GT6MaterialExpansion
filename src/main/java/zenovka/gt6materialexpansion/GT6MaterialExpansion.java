@@ -37,6 +37,7 @@ public final class GT6MaterialExpansion {
     public static OreDictMaterial Loam;
     public static OreDictMaterial Soil;
     public static OreDictMaterial PlantMatter;
+    public static OreDictMaterial OrganicMatter;
     public static OreDictMaterial Mycelium;
     public static OreDictMaterial Keratin, Silk, Chitin, Cotton, Hemp, Flax, Fibre, Wool;
 	
@@ -62,6 +63,10 @@ public final class GT6MaterialExpansion {
         PlantMatter = OreDictMaterial.createMaterial(32026, "PlantMatter", "Plant Matter");
         PlantMatter.setDensity(0.45D);
         PlantMatter.setRGBa(90, 145, 55, 255);
+        OrganicMatter = OreDictMaterial.createMaterial(32036, "OrganicMatter", "Organic Matter");
+        // Hydrated, undifferentiated animal tissue; provisional bulk density.
+        OrganicMatter.setDensity(1.05D);
+        OrganicMatter.setRGBa(170, 125, 105, 255);
         Mycelium = OreDictMaterial.createMaterial(32027, "Mycelium", "Mycelium");
         // Provisional bulk density; revisit against GT6 mushroom processing.
         Mycelium.setDensity(0.25D);
@@ -215,6 +220,7 @@ public final class GT6MaterialExpansion {
         assignIfMissing("BiomesOPlenty:mud", 0, Soil, 9 * U);
         FloraMaterials.register(PlantMatter);
         FungalMaterials.register(Mycelium);
+        MiscMaterials.register(Soil, PlantMatter, Mycelium, OrganicMatter, Fibre, Wool);
         BiologicalFibreMaterials.register(Keratin, Silk, Chitin, Cotton, Hemp, Flax, Fibre, Wool, stringIsCotton);
         // Vanilla torches are invariant, fuel-agnostic objects; no per-stack NBT.
         // Respect any composition another mod may have registered.
