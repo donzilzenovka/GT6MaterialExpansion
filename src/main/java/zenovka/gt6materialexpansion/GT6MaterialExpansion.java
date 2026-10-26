@@ -36,7 +36,7 @@ public final class GT6MaterialExpansion {
     public static OreDictMaterial Soil;
     public static OreDictMaterial PlantMatter;
     public static OreDictMaterial Mycelium;
-    public static OreDictMaterial Keratin, Silk, Chitin, Cotton, Hemp, Flax, Fibre;
+    public static OreDictMaterial Keratin, Silk, Chitin, Cotton, Hemp, Flax, Fibre, Wool;
 	
     public static OreDictMaterial ChickenRaw;
     public static OreDictMaterial ChickenCooked;
@@ -63,6 +63,7 @@ public final class GT6MaterialExpansion {
         Hemp = OreDictMaterial.createMaterial(32032, "Hemp", "Hemp").setDensity(1.48D);
         Flax = OreDictMaterial.createMaterial(32033, "Flax", "Flax").setDensity(1.50D);
         Fibre = OreDictMaterial.createMaterial(32034, "Fibre", "Fibre").setDensity(1.40D);
+        Wool = OreDictMaterial.createMaterial(32035, "Wool", "Wool").setDensity(1.30D);
         ChickenRaw = OreDictMaterial.createMaterial(32014, "ChickenRaw", "Raw Chicken");
         ChickenCooked = OreDictMaterial.createMaterial(32015, "ChickenCooked", "Cooked Chicken");
         BeefRaw = OreDictMaterial.createMaterial(32016, "BeefRaw", "Raw Beef");
@@ -204,7 +205,7 @@ public final class GT6MaterialExpansion {
         assignIfMissing("BiomesOPlenty:mud", 0, Soil, 9 * U);
         FloraMaterials.register(PlantMatter);
         FungalMaterials.register(Mycelium);
-        BiologicalFibreMaterials.register(Keratin, Silk, Chitin, Cotton, Hemp, Flax, Fibre);
+        BiologicalFibreMaterials.register(Keratin, Silk, Chitin, Cotton, Hemp, Flax, Fibre, Wool);
         // Additional item associations will follow after pack-specific verification.
         overrideMeatItem("minecraft:chicken", 0, ChickenRaw);
         overrideMeatItem("minecraft:cooked_chicken", 0, ChickenCooked);
