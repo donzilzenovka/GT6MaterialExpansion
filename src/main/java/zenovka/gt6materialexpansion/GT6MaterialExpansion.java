@@ -34,6 +34,7 @@ public final class GT6MaterialExpansion {
     // IDs are in GT6's custom-material range; check for pack conflicts before release.
     public static OreDictMaterial Loam;
     public static OreDictMaterial Soil;
+    public static OreDictMaterial PlantMatter;
 	
     public static OreDictMaterial ChickenRaw;
     public static OreDictMaterial ChickenCooked;
@@ -46,6 +47,9 @@ public final class GT6MaterialExpansion {
     public void preInit(FMLPreInitializationEvent event) {
         Loam = OreDictMaterial.createMaterial(32011, "Loam", "Loam");
         Soil = OreDictMaterial.createMaterial(32013, "Soil", "Soil");
+        PlantMatter = OreDictMaterial.createMaterial(32026, "PlantMatter", "Plant Matter");
+        PlantMatter.setDensity(0.45D);
+        PlantMatter.setRGBa(90, 145, 55, 255);
         ChickenRaw = OreDictMaterial.createMaterial(32014, "ChickenRaw", "Raw Chicken");
         ChickenCooked = OreDictMaterial.createMaterial(32015, "ChickenCooked", "Cooked Chicken");
         BeefRaw = OreDictMaterial.createMaterial(32016, "BeefRaw", "Raw Beef");
@@ -185,6 +189,7 @@ public final class GT6MaterialExpansion {
         assignIfMissing("BiomesOPlenty:newBopDirt", 4, MT.STONES.Siltstone, 9 * U);
         assignIfMissing("BiomesOPlenty:newBopGrass", 0, Loam, 9 * U);
         assignIfMissing("BiomesOPlenty:mud", 0, Soil, 9 * U);
+        FloraMaterials.register(PlantMatter);
         // Additional item associations will follow after pack-specific verification.
         overrideMeatItem("minecraft:chicken", 0, ChickenRaw);
         overrideMeatItem("minecraft:cooked_chicken", 0, ChickenCooked);
