@@ -20,30 +20,30 @@ public final class MiscMaterials {
     private static final long U = CS.U;
     private MiscMaterials() {}
 
-    public static void register(OreDictMaterial soil, OreDictMaterial plant,
-                                OreDictMaterial mycelium, OreDictMaterial organic,
-                                OreDictMaterial fibre, OreDictMaterial wool) {
+    public static void register(OreDictMaterial Soil, OreDictMaterial PlantMatter,
+                                OreDictMaterial Mycelium, OreDictMaterial OrganicMatter,
+                                OreDictMaterial Fibre, OreDictMaterial Wool) {
         // Terrain: replace one ninth of the dirt baseline with its surface layer.
-        put("minecraft:grass", 0, soil, 8 * U, plant, U);
-        put("minecraft:dirt", 2, soil, 8 * U, plant, U); // podzol
-        put("minecraft:farmland", 0, soil, 9 * U);
-        put("minecraft:mycelium", 0, soil, 8 * U, mycelium, U);
-        put("minecraft:cactus", 0, plant, U);
+        put("minecraft:grass", 0, Soil, 8 * U, PlantMatter, U);
+        put("minecraft:dirt", 2, Soil, 8 * U, PlantMatter, U); // podzol
+        put("minecraft:farmland", 0, Soil, 9 * U);
+        put("minecraft:Mycelium", 0, Soil, 8 * U, Mycelium, U);
+        put("minecraft:cactus", 0, PlantMatter, U);
         // Nether Wart is treated as a fungal growth, not generic vegetation.
-        put("minecraft:nether_wart", 0, mycelium, U / 4, MT.Ma, U / 8);
-        put("minecraft:sponge", 0, organic, U);
-        put("minecraft:sponge", 1, organic, U);
+        put("minecraft:nether_wart", 0, Mycelium, U / 4, MT.Ma, U / 8);
+        put("minecraft:sponge", 0, OrganicMatter, U);
+        put("minecraft:sponge", 1, OrganicMatter, U);
         put("minecraft:sandstone_stairs", 0, MT.Sand, 3 * U / 4);
 
-        // Animal-derived substances only: never substitute Organic Matter for flora.
-        put("minecraft:spider_eye", 0, organic, U / 4);
+        // Animal-derived substances only: never substitute OrganicMatter Matter for flora.
+        put("minecraft:spider_eye", 0, OrganicMatter, U / 4);
         put("minecraft:ghast_tear", 0, MT.Ma, U / 4);
-        put("minecraft:dye", 0, organic, U / 4); // ink sac
+        put("minecraft:dye", 0, OrganicMatter, U); // ink sac
 
         // Simple objects and multi-ingredient structures.
         for (int meta = 0; meta < 16; meta++)
-            put("minecraft:carpet", meta, wool, U / 3);
-        put("minecraft:lead", 0, fibre, U / 2);
+            put("minecraft:carpet", meta, Wool, U / 3);
+        put("minecraft:lead", 0, Fibre, U / 2);
         put("minecraft:name_tag", 0, MT.Paper, U / 4);
         put("minecraft:tnt", 0, MT.Gunpowder, 4 * U, MT.Paper, U);
         put("minecraft:daylight_detector", 0, MT.Wood, 3 * U,
@@ -67,38 +67,38 @@ public final class MiscMaterials {
         // Preserve specific GT6 materials rather than inventing dye or slime elements.
         put("minecraft:slime_ball", 0, MT.Glue, U / 9);
         put("minecraft:magma_cream", 0, MT.Glue, U / 9, MT.Blaze, U / 9);
-        put("minecraft:reeds", 0, plant, U / 4, MT.Sugar, U / 4);
+        put("minecraft:reeds", 0, PlantMatter, U / 4, MT.Sugar, U / 4);
         put("minecraft:dye", 3, MT.Cocoa, U);
         put("minecraft:dye", 4, MT.Lapis, U);
         put("minecraft:dye", 15, MT.Bone, U);
         put("minecraft:experience_bottle", 0, MT.Glass, U / 4, MT.Ma, U / 4);
         // Potion effect metadata/NBT does not change its glass and water contents.
         put("minecraft:potion", 32767, MT.Glass, U / 4, MT.H2O, U);
-        put("minecraft:fermented_spider_eye", 0, organic, U / 4,
+        put("minecraft:fermented_spider_eye", 0, OrganicMatter, U / 4,
             MT.Sugar, U / 4, MT.Biomass, U / 4);
         put("minecraft:item_frame", 0, MT.Leather, U, MT.Wood, 4 * U);
-        supplement("minecraft:chest_minecart", MT.Fe, 5 * U);
-        supplement("minecraft:furnace_minecart", MT.Fe, 5 * U);
+        supplement("minecraft:chest_minecart", 0, MT.Fe, 5 * U);
+        supplement("minecraft:furnace_minecart", 0, MT.Fe, 5 * U);
         // Composite structures: provisional recipe-scale quantities.
-        put("minecraft:bed", 0, MT.Wood, 3 * U, wool, 3 * U);
+        put("minecraft:bed", 0, MT.Wood, 3 * U, Wool, 3 * U);
         put("minecraft:brewing_stand", 0, MT.Stone, 3 * U, MT.Blaze, U);
         put("minecraft:tnt_minecart", 0, MT.Fe, 5 * U,
             MT.Gunpowder, 4 * U, MT.Paper, U);
-        put("minecraft:hopper_minecart", 0, MT.Fe, 10 * U);
+        put("minecraft:hopper_minecart", 0, MT.Fe, 10 * U, MT.Wood, 8 * U);
         put("minecraft:command_block_minecart", 0, MT.Fe, 5 * U, MT.Bedrock, U);
         // Skull metadata: 0 skeleton, 1 wither, 2 zombie, 3 player, 4 creeper.
         put("minecraft:skull", 2, MT.MeatRotten, U, MT.Bone, U);
         put("minecraft:skull", 3, MT.MeatRaw, U, MT.Bone, U);
-        put("minecraft:skull", 4, plant, U, MT.Gunpowder, U / 9);
+        put("minecraft:skull", 4, PlantMatter, U, MT.Gunpowder, U / 9);
         put("minecraft:dragon_egg", 0, MT.Bedrock, U);
         put("minecraft:command_block", 0, MT.Bedrock, U);
     }
 
     /** Preserve existing components; only supplement carts lacking iron. */
-    private static void supplement(String id, OreDictMaterial material, long amount) {
+    private static void supplement(String id, int meta, OreDictMaterial material, long amount) {
         Object obj = Item.itemRegistry.getObject(id);
         if (!(obj instanceof Item)) return;
-        ItemStack stack = new ItemStack((Item) obj, 1, 0);
+        ItemStack stack = new ItemStack((Item) obj, 1, meta);
         OreDictItemData before = OreDictManager.INSTANCE.getItemData(stack);
         if (before == null || before.mMaterial == null) return;
         java.util.List<OreDictMaterialStack> parts = before.getAllMaterialStacks();
