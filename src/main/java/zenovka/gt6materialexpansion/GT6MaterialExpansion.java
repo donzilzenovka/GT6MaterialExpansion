@@ -21,6 +21,7 @@ import gregapi.oredict.configurations.OreDictConfigurationComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import cpw.mods.fml.common.FMLLog;
+import net.minecraftforge.common.config.Configuration;
 
 /**
  * Initial GT6 6.17.06 material-data experiment.
@@ -30,6 +31,7 @@ import cpw.mods.fml.common.FMLLog;
      version = "0.1.0", dependencies = "required-after:gregtech")
 public final class GT6MaterialExpansion {
     private static final long U = CS.U;
+    public static boolean stringIsCotton = false;
 
     // IDs are in GT6's custom-material range; check for pack conflicts before release.
     public static OreDictMaterial Loam;
@@ -47,6 +49,14 @@ public final class GT6MaterialExpansion {
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
+        Configuration config = new Configuration(event.getSuggestedConfigurationFile());
+        try {
+            config.load();
+            stringIsCotton = config.getBoolean("stringIsCotton", "materials", false,
+                "Use Cotton for generic Minecraft string instead of Silk. Does not change recipes or cobwebs.");
+        } finally {
+            if (config.hasChanged()) config.save();
+        }
         Loam = OreDictMaterial.createMaterial(32011, "Loam", "Loam");
         Soil = OreDictMaterial.createMaterial(32013, "Soil", "Soil");
         PlantMatter = OreDictMaterial.createMaterial(32026, "PlantMatter", "Plant Matter");
@@ -205,7 +215,7 @@ public final class GT6MaterialExpansion {
         assignIfMissing("BiomesOPlenty:mud", 0, Soil, 9 * U);
         FloraMaterials.register(PlantMatter);
         FungalMaterials.register(Mycelium);
-        BiologicalFibreMaterials.register(Keratin, Silk, Chitin, Cotton, Hemp, Flax, Fibre, Wool);
+        BiologicalFibreMaterials.register(Keratin, Silk, Chitin, Cotton, Hemp, Flax, Fibre, Wool, stringIsCotton);
         // Additional item associations will follow after pack-specific verification.
         overrideMeatItem("minecraft:chicken", 0, ChickenRaw);
         overrideMeatItem("minecraft:cooked_chicken", 0, ChickenCooked);
