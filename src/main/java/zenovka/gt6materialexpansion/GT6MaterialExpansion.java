@@ -216,7 +216,7 @@ public final class GT6MaterialExpansion {
         FloraMaterials.register(PlantMatter);
         FungalMaterials.register(Mycelium);
         BiologicalFibreMaterials.register(Keratin, Silk, Chitin, Cotton, Hemp, Flax, Fibre, Wool, stringIsCotton);
-        // Additional item associations will follow after pack-specific verification.
+        ToolMaterials.register(); // Experimental GT6 shovel-only composition probe.\n        // Additional item associations will follow after pack-specific verification.
         overrideMeatItem("minecraft:chicken", 0, ChickenRaw);
         overrideMeatItem("minecraft:cooked_chicken", 0, ChickenCooked);
         overrideMeatItem("minecraft:beef", 0, BeefRaw);
