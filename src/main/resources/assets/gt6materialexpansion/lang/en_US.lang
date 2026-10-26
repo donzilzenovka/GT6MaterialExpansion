@@ -113,3 +113,63 @@ oredict.nuggetMuttonCooked=Cooked Mutton Nugget
 oredict.chunkGtMuttonCooked=Cooked Mutton Chunk
 oredict.billetMuttonCooked=Cooked Mutton Billet
 oredict.ingotMuttonCooked=Cooked Mutton Bar
+
+# Raw Cod
+oredict.blockIngotCodRaw=Block of Raw Chicken bars
+oredict.blockDustCodRaw=Block of Raw Fishmeal Chicken
+oredict.blockSolidCodRaw=Compressed Block of Raw Chicken
+oredict.crateGt664DustCodRaw=Crate of Raw Fishmeal Chicken
+oredict.crateGt64IngotCodRaw=Crate of Raw Fishmeal Chicken Bars
+oredict.dustCodRaw=Raw Fishmeal Chicken
+oredict.dustSmallCodRaw=Small Pile of Raw Fishmeal Chicken
+oredict.dustTinyCodRaw=Tiny Pile of Raw Fishmeal Chicken
+oredict.dustDiv72CodRaw=1/72nd of a Pile of Raw Fishmeal Chicken
+oredict.nuggetCodRaw=Raw Chicken Nugget
+oredict.chunkGtCodRaw=Raw Chicken Chunk
+oredict.billetCodRaw=Raw Chicken Billet
+oredict.ingotCodRaw=Raw Chicken Bar
+
+# Cooked Cod
+oredict.blockIngotCodCooked=Block of Cooked Chicken bars
+oredict.blockDustCodCooked=Block of Cooked Fishmeal Chicken
+oredict.blockSolidCodCooked=Compressed Block of Cooked Chicken
+oredict.crateGt664DustCodCooked=Crate of Cooked Fishmeal Chicken
+oredict.crateGt64IngotCodCooked=Crate of Cooked Fishmeal Chicken Bars
+oredict.dustCodCooked=Cooked Fishmeal Chicken
+oredict.dustSmallCodCooked=Small Pile of Cooked Fishmeal Chicken
+oredict.dustTinyCodCooked=Tiny Pile of Cooked Fishmeal Chicken
+oredict.dustDiv72CodCooked=1/72nd of a Pile of Cooked Fishmeal Chicken
+oredict.nuggetCodCooked=Cooked Chicken Nugget
+oredict.chunkGtCodCooked=Cooked Chicken Chunk
+oredict.billetCodCooked=Cooked Chicken Billet
+oredict.ingotCodCooked=Cooked Chicken Bar
+
+# Raw Salmon
+oredict.blockIngotSalmonRaw=Block of Raw Chicken bars
+oredict.blockDustSalmonRaw=Block of Raw Fishmeal Chicken
+oredict.blockSolidSalmonRaw=Compressed Block of Raw Chicken
+oredict.crateGt664DustSalmonRaw=Crate of Raw Fishmeal Chicken
+oredict.crateGt64IngotSalmonRaw=Crate of Raw Fishmeal Chicken Bars
+oredict.dustSalmonRaw=Raw Fishmeal Chicken
+oredict.dustSmallSalmonRaw=Small Pile of Raw Fishmeal Chicken
+oredict.dustTinySalmonRaw=Tiny Pile of Raw Fishmeal Chicken
+oredict.dustDiv72SalmonRaw=1/72nd of a Pile of Raw Fishmeal Chicken
+oredict.nuggetSalmonRaw=Raw Chicken Nugget
+oredict.chunkGtSalmonRaw=Raw Chicken Chunk
+oredict.billetSalmonRaw=Raw Chicken Billet
+oredict.ingotSalmonRaw=Raw Chicken Bar
+
+# Cooked Salmon
+oredict.blockIngotSalmonCooked=Block of Cooked Chicken bars
+oredict.blockDustSalmonCooked=Block of Cooked Fishmeal Chicken
+oredict.blockSolidSalmonCooked=Compressed Block of Cooked Chicken
+oredict.crateGt664DustSalmonCooked=Crate of Cooked Fishmeal Chicken
+oredict.crateGt64IngotSalmonCooked=Crate of Cooked Fishmeal Chicken Bars
+oredict.dustSalmonCooked=Cooked Fishmeal Chicken
+oredict.dustSmallSalmonCooked=Small Pile of Cooked Fishmeal Chicken
+oredict.dustTinySalmonCooked=Tiny Pile of Cooked Fishmeal Chicken
+oredict.dustDiv72SalmonCooked=1/72nd of a Pile of Cooked Fishmeal Chicken
+oredict.nuggetSalmonCooked=Cooked Chicken Nugget
+oredict.chunkGtSalmonCooked=Cooked Chicken Chunk
+oredict.billetSalmonCooked=Cooked Chicken Billet
+oredict.ingotSalmonCooked=Cooked Chicken Bar
