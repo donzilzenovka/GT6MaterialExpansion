@@ -20,13 +20,14 @@ public final class BiologicalFibreMaterials {
 
     public static void register(OreDictMaterial keratin, OreDictMaterial silk,
             OreDictMaterial chitin, OreDictMaterial cotton, OreDictMaterial hemp,
-            OreDictMaterial flax, OreDictMaterial fibre, OreDictMaterial wool) {
+            OreDictMaterial flax, OreDictMaterial fibre, OreDictMaterial wool,
+            boolean stringIsCotton) {
         Set<String> assigned = new HashSet<String>();
         // Explicit vanilla associations, including all wool colours.
         for (int meta = 0; meta < 16; meta++)
             assignBlock("minecraft:wool", meta, wool, 4 * U, assigned);
         assignItem("minecraft:feather", 0, keratin, U / 16, assigned);
-        assignItem("minecraft:string", 0, cotton, U / 16, assigned);
+        assignItem("minecraft:string", 0, stringIsCotton ? cotton : silk, U / 16, assigned);
         assignBlock("minecraft:web", 0, silk, U / 2, assigned);
 
         for (String ore : OreDictionary.getOreNames()) {
@@ -34,7 +35,8 @@ public final class BiologicalFibreMaterials {
             OreDictMaterial material = null;
             if (name.equals("itemfeather") || name.equals("feather")) material = keratin;
             else if (name.equals("itemwool") || name.equals("blockwool")) material = wool;
-            else if (name.equals("itemstring") || name.equals("string")) material = cotton;
+            else if (name.equals("itemstring") || name.equals("string"))
+                material = stringIsCotton ? cotton : silk;
             else if (name.equals("blockweb") || name.equals("itemspidersilk")
                     || name.equals("itemspiderweb") || name.equals("itemsilk")) material = silk;
             else if (name.equals("itemchitin") || name.equals("chitin")) material = chitin;
