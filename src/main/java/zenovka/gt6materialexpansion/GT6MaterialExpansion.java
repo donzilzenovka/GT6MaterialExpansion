@@ -183,9 +183,7 @@ public final class GT6MaterialExpansion {
         overrideMeatItem("minecraft:cooked_beef", BeefCooked, false);
         overrideMeatItem("minecraft:porkchop", PorkRaw, true);
         overrideMeatItem("minecraft:cooked_porkchop", PorkCooked, false);
-        // Vanilla 1.7.10 has no mutton; these are optional modded item associations.
-        overrideMeatItem("etfuturum:mutton_raw", MuttonRaw, true);
-        overrideMeatItem("etfuturum:mutton_cooked", MuttonCooked, false);
+        // Mutton item association awaits the actual modded registry names.
     }
 
     private static void configureMeat(OreDictMaterial raw, OreDictMaterial cooked,
@@ -230,7 +228,7 @@ public final class GT6MaterialExpansion {
         registerMeatProcessing("minecraft:chicken", ChickenRaw, ChickenCooked);
         registerMeatProcessing("minecraft:beef", BeefRaw, BeefCooked);
         registerMeatProcessing("minecraft:porkchop", PorkRaw, PorkCooked);
-        registerMeatProcessing("etfuturum:mutton_raw", MuttonRaw, MuttonCooked);
+        ChickenFoodRecipes.register(MuttonRaw, MuttonCooked);
     }
 
     private static void registerMeatProcessing(String itemName, OreDictMaterial raw, OreDictMaterial cooked) {
