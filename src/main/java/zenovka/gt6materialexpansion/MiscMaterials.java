@@ -77,8 +77,8 @@ public final class MiscMaterials {
         put("minecraft:fermented_spider_eye", 0, OrganicMatter, U / 4,
             MT.Sugar, U / 4, MT.Biomass, U / 4);
         put("minecraft:item_frame", 0, MT.Leather, U, MT.Wood, 4 * U);
-        supplement("minecraft:chest_minecart", 0, MT.Fe, 5 * U);
-        supplement("minecraft:furnace_minecart", 0, MT.Fe, 5 * U);
+        putOverride("minecraft:chest_minecart", 0, MT.Fe, 5 * U, MT.Wood, 8 * U);
+        putOverride("minecraft:furnace_minecart", 0, MT.Fe, 5 * U, MT.Stone, 8 * U);
         // Composite structures: provisional recipe-scale quantities.
         put("minecraft:bed", 0, MT.Wood, 3 * U, Wool, 3 * U);
         put("minecraft:brewing_stand", 0, MT.Stone, 3 * U, MT.Blaze, U);
@@ -94,23 +94,18 @@ public final class MiscMaterials {
         put("minecraft:command_block", 0, MT.Bedrock, U);
     }
 
-    /** Preserve existing components; only supplement carts lacking iron. */
-    private static void supplement(String id, int meta, OreDictMaterial material, long amount) {
-        Object obj = Item.itemRegistry.getObject(id);
-        if (!(obj instanceof Item)) return;
-        ItemStack stack = new ItemStack((Item) obj, 1, meta);
-        OreDictItemData before = OreDictManager.INSTANCE.getItemData(stack);
-        if (before == null || before.mMaterial == null) return;
-        java.util.List<OreDictMaterialStack> parts = before.getAllMaterialStacks();
-        for (OreDictMaterialStack part : parts)
-            if (part.mMaterial == material) return;
-        OreDictMaterialStack[] extras = new OreDictMaterialStack[parts.size()];
-        for (int i = 1; i < parts.size(); i++)
-            extras[i - 1] = new OreDictMaterialStack(parts.get(i).mMaterial, parts.get(i).mAmount);
-        extras[parts.size() - 1] = new OreDictMaterialStack(material, amount);
-        boolean ok = OreDictManager.INSTANCE.setItemData(stack,
-            new OreDictItemData(parts.get(0).mMaterial, parts.get(0).mAmount, extras));
-        FMLLog.info("[GT6MaterialExpansion] %s added chassis=%s", id, ok);
+    /** Explicit replacement for composite carts with incomplete existing GT6 data. */
+    private static void putOverride(String id, int meta, OreDictMaterial primary, long amount,
+                                    Object... extras) {
+        Item item = (Item) Item.itemRegistry.getObject(id);
+        if (item == null) return;
+        OreDictMaterialStack[] additional = new OreDictMaterialStack[extras.length / 2];
+        for (int i = 0; i < additional.length; i++)
+            additional[i] = new OreDictMaterialStack(
+                (OreDictMaterial) extras[2 * i], (Long) extras[2 * i + 1]);
+        boolean updated = OreDictManager.INSTANCE.setItemData(
+            new ItemStack(item, 1, meta), new OreDictItemData(primary, amount, additional));
+        FMLLog.info("[GT6MaterialExpansion] Misc override %s:%d assigned=%s", id, meta, updated);
     }
 
     private static void put(String id, int meta, OreDictMaterial primary, long amount,
