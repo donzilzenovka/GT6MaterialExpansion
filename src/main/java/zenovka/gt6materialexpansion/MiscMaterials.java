@@ -1,0 +1,94 @@
+package zenovka.gt6materialexpansion;
+
+import cpw.mods.fml.common.FMLLog;
+import gregapi.data.CS;
+import gregapi.data.MT;
+import gregapi.oredict.OreDictItemData;
+import gregapi.oredict.OreDictManager;
+import gregapi.oredict.OreDictMaterial;
+import gregapi.oredict.OreDictMaterialStack;
+import net.minecraft.block.Block;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+
+/**
+ * Fixed, conservative vanilla material associations.
+ * Existing GT6/mod registrations always win. No NBT, recipes or ore names changed.
+ * Amounts not established by GT6 are provisional composition estimates.
+ */
+public final class MiscMaterials {
+    private static final long U = CS.U;
+    private MiscMaterials() {}
+
+    public static void register(OreDictMaterial soil, OreDictMaterial plant,
+                                OreDictMaterial mycelium, OreDictMaterial organic,
+                                OreDictMaterial fibre, OreDictMaterial wool) {
+        // Terrain: replace one ninth of the dirt baseline with its surface layer.
+        put("minecraft:grass", 0, soil, 8 * U, plant, U);
+        put("minecraft:dirt", 2, soil, 8 * U, plant, U); // podzol
+        put("minecraft:farmland", 0, soil, 9 * U);
+        put("minecraft:mycelium", 0, soil, 8 * U, mycelium, U);
+        put("minecraft:cactus", 0, plant, U);
+        put("minecraft:sponge", 0, organic, U);
+        put("minecraft:sponge", 1, organic, U);
+        put("minecraft:sandstone_stairs", 0, MT.Sand, 3 * U / 4);
+
+        // Animal-derived substances only: never substitute Organic Matter for flora.
+        put("minecraft:spider_eye", 0, organic, U / 4);
+        put("minecraft:dye", 0, organic, U / 4); // ink sac
+
+        // Simple objects and multi-ingredient structures.
+        for (int meta = 0; meta < 16; meta++)
+            put("minecraft:carpet", meta, wool, U / 3);
+        put("minecraft:lead", 0, fibre, U / 2);
+        put("minecraft:name_tag", 0, MT.Paper, U / 4);
+        put("minecraft:tnt", 0, MT.Gunpowder, 4 * U, MT.Paper, U);
+        put("minecraft:daylight_detector", 0, MT.Wood, 3 * U,
+            MT.Glass, 3 * U, MT.NetherQuartz, 3 * U);
+        put("minecraft:activator_rail", 0, MT.Fe, U / 4,
+            MT.WoodTreated, U / 4, MT.Redstone, U / 4);
+        put("minecraft:unpowered_repeater", 0, MT.Stone, U,
+            MT.Redstone, U / 2, MT.Wood, U / 2);
+        put("minecraft:powered_repeater", 0, MT.Stone, U,
+            MT.Redstone, U / 2, MT.Wood, U / 2);
+        put("minecraft:unpowered_comparator", 0, MT.Stone, U,
+            MT.Redstone, U / 2, MT.NetherQuartz, U / 4);
+        put("minecraft:powered_comparator", 0, MT.Stone, U,
+            MT.Redstone, U / 2, MT.NetherQuartz, U / 4);
+
+        // Identical iron container regardless of fluid contents.
+        put("minecraft:water_bucket", 0, MT.Fe, 3 * U, MT.FreshWater, U);
+        put("minecraft:milk_bucket", 0, MT.Fe, 3 * U, MT.Milk, U);
+        put("minecraft:lava_bucket", 0, MT.Fe, 3 * U, MT.Lava, U);
+
+        // Preserve specific GT6 materials rather than inventing dye or slime elements.
+        put("minecraft:slime_ball", 0, MT.Glue, U / 9);
+        put("minecraft:magma_cream", 0, MT.Glue, U / 9, MT.Blaze, U / 9);
+        put("minecraft:reeds", 0, plant, U / 4, MT.Sugar, U / 4);
+        put("minecraft:dye", 3, MT.Cocoa, U);
+        put("minecraft:dye", 4, MT.Lapis, U);
+        put("minecraft:dye", 15, MT.Bone, U);
+        put("minecraft:experience_bottle", 0, MT.Glass, U / 4, MT.Ma, U / 4);
+        put("minecraft:dragon_egg", 0, MT.Bedrock, U);
+        put("minecraft:command_block", 0, MT.Bedrock, U);
+    }
+
+    private static void put(String id, int meta, OreDictMaterial primary, long amount,
+                            Object... extras) {
+        Item item = (Item) Item.itemRegistry.getObject(id);
+        if (item == null) {
+            Block block = Block.getBlockFromName(id);
+            if (block != null) item = Item.getItemFromBlock(block);
+        }
+        if (item == null || primary == null) return;
+        ItemStack stack = new ItemStack(item, 1, meta);
+        if (OreDictManager.INSTANCE.getItemData(stack) != null) return;
+        OreDictMaterialStack[] additional = new OreDictMaterialStack[extras.length / 2];
+        for (int i = 0; i < additional.length; i++)
+            additional[i] = new OreDictMaterialStack(
+                (OreDictMaterial) extras[2 * i], (Long) extras[2 * i + 1]);
+        boolean added = OreDictManager.INSTANCE.addItemData(
+            stack, new OreDictItemData(primary, amount, additional));
+        FMLLog.info("[GT6MaterialExpansion] Misc %s:%d assigned=%s", id, meta, added);
+    }
+}
