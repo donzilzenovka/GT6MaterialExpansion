@@ -250,6 +250,7 @@ public final class GT6MaterialExpansion {
     public void serverStarted(FMLServerStartedEvent event) {
         FMLLog.info("[GT6MaterialExpansion] Chicken mortar: checking after server startup");
         overrideChickenMortarOutput();
+        ChickenFoodRecipes.register(ChickenRaw, ChickenCooked);
     }
 
     /** Change only the already-registered vanilla chicken mortar output. */
