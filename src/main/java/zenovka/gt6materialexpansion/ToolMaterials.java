@@ -46,7 +46,8 @@ public final class ToolMaterials {
         if (!(tool.getToolStatsInternal(stack) instanceof gregtech.items.tools.early.GT_Tool_Shovel)) return;
 
         NBTTagCompound tag = stack.getTagCompound();
-        if (tag == null || tag.hasKey(RECYCLING_TAG)) return;
+        if (tag != null && tag.hasKey(RECYCLING_TAG)) return;
+        if (tag == null) tag = new NBTTagCompound();
         OreDictMaterial head = MultiItemTool.getPrimaryMaterial(stack);
         OreDictMaterial handle = MultiItemTool.getSecondaryMaterial(stack);
         if (head == null || handle == null || head == MT.NULL || handle == MT.NULL) return;
