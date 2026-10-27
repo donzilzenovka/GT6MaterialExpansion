@@ -1,5 +1,8 @@
 package zenovka.gt6materialexpansion;
 
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.PlayerEvent;
 import gregapi.oredict.OreDictItemData;
 import gregapi.oredict.OreDictManager;
 import gregapi.data.CS;
@@ -27,12 +30,52 @@ public final class FoodMaterials {
     private static final String ORIGINAL_TAG = "zenovka.original.mats";
     private static final String RECYCLING_TAG = "gt.recycling.mats";
 
+    private static final int DIAGNOSTIC_LIMIT = 100;
+    private static int diagnosticLines;
+    private static final ThreadLocal<ItemStack> LAST_PREVIEW = new ThreadLocal<ItemStack>();
+
     private FoodMaterials() {}
+
+    private static synchronized void trace(String message) {
+        if (diagnosticLines++ < DIAGNOSTIC_LIMIT)
+            System.out.println("[GT6MaterialExpansion/CraftDiagnostic] " + message);
+    }
+
+    private static String describe(ItemStack stack) {
+        if (stack == null) return "null";
+        NBTTagCompound tag = stack.getTagCompound();
+        Object id = Item.itemRegistry.getNameForObject(stack.getItem());
+        return "item=" + id + " meta=" + stack.getItemDamage()
+                + " count=" + stack.stackSize
+                + " nbt=" + (tag == null ? "null" : tag.toString());
+    }
+
+    private static String compare(ItemStack a, ItemStack b) {
+        if (a == null || b == null) return "comparison unavailable (null stack)";
+        return "sameItem=" + (a.getItem() == b.getItem())
+                + " sameMeta=" + (a.getItemDamage() == b.getItemDamage())
+                + " tagsEqual=" + ItemStack.areItemStackTagsEqual(a, b)
+                + " itemStackable=" + a.isStackable()
+                + " maxStack=" + a.getMaxStackSize();
+    }
+
+    @SubscribeEvent
+    public void diagnosticCraft(PlayerEvent.ItemCraftedEvent event) {
+        if (event.crafting == null || event.crafting.getTagCompound() == null
+                || !event.crafting.getTagCompound().hasKey(ORIGINAL_TAG)) return;
+        String side = event.player.worldObj.isRemote ? "CLIENT" : "SERVER";
+        ItemStack cursor = event.player.inventory.getItemStack();
+        ItemStack preview = LAST_PREVIEW.get();
+        trace(side + " CRAFT output={" + describe(event.crafting) + "}");
+        trace(side + " CURSOR={" + describe(cursor) + "} vs output: " + compare(cursor, event.crafting));
+        trace(side + " LAST_PREVIEW={" + describe(preview) + "} vs output: " + compare(preview, event.crafting));
+    }
 
     public static void register(OreDictMaterial apple, OreDictMaterial carrot, OreDictMaterial egg) {
         assignIfMissing("minecraft:apple", apple);
         assignIfMissing("minecraft:carrot", carrot);
         assignIfMissing("minecraft:egg", egg);
+        FMLCommonHandler.instance().bus().register(new FoodMaterials());
     }
 
     private static void assignIfMissing(String id, OreDictMaterial material) {
@@ -66,6 +109,13 @@ public final class FoodMaterials {
         OreDictMaterialStack.saveList(ORIGINAL_TAG, tag, materials);
         OreDictMaterialStack.saveList(RECYCLING_TAG, tag, materials);
         output.setTagCompound(tag);
+        ItemStack previous = LAST_PREVIEW.get();
+        if (previous != null && previous.getItem() == output.getItem()
+                && previous.getItemDamage() == output.getItemDamage()
+                && !ItemStack.areItemStackTagsEqual(previous, output)) {
+            trace("PREVIEW MISMATCH previous={" + describe(previous) + "} next={" + describe(output) + "}");
+        }
+        LAST_PREVIEW.set(output.copy());
         return output;
     }
 
