@@ -37,6 +37,23 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
                 }
             }
             if (patched < 1) {
+                // Some 1.7.10 coremods rewrite the vanilla furnace lookup.
+                // Emit a bounded bytecode call inventory so we can identify the
+                // actual post-transform path instead of guessing at signatures.
+                for (MethodNode method : node.methods) {
+                    if (!"smeltItem".equals(method.name) && !"func_145949_j".equals(method.name)
+                            && !"canSmelt".equals(method.name) && !"func_145948_k".equals(method.name)) continue;
+                    System.err.println("[GT6MaterialExpansion/Furnace] Method " + method.name + method.desc);
+                    int shown = 0;
+                    for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
+                        if (!(insn instanceof MethodInsnNode)) continue;
+                        MethodInsnNode call = (MethodInsnNode) insn;
+                        if (shown++ >= 30) break;
+                        System.err.println("[GT6MaterialExpansion/Furnace] CALL " + call.owner + "." + call.name + call.desc);
+                    }
+                }
+            }
+            if (patched < 1) {
                 System.err.println("[GT6MaterialExpansion] Vanilla furnace recipe lookup signature not found.");
                 return bytes;
             }
