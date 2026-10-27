@@ -94,10 +94,10 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
                     if (!"gregapi/recipes/Recipe".equals(call.owner) || !"isRecipeInputEqual".equals(call.name)
                             || !call.desc.startsWith("(ZZ")) continue;
                     InsnList capture = new InsnList();
-                    capture.add(new VarInsnNode(ALOAD, 0));
-                    capture.add(new InsnNode(ICONST_0));
-                    capture.add(new MethodInsnNode(INVOKEVIRTUAL, OWNER, "slot", "(I)Lnet/minecraft/item/ItemStack;", false));
-                    capture.add(new MethodInsnNode(INVOKESTATIC, BRIDGE, "snapshot", "(Lnet/minecraft/item/ItemStack;)V", false));
+                    // Recipe's final argument is the actual item input array.
+                    // Capture it before isRecipeInputEqual consumes the ingredients.
+                    capture.add(new InsnNode(DUP));
+                    capture.add(new MethodInsnNode(INVOKESTATIC, BRIDGE, "snapshotInputs", "([Lnet/minecraft/item/ItemStack;)V", false));
                     method.instructions.insertBefore(insn, capture);
                 }
                 InsnList apply = new InsnList();
