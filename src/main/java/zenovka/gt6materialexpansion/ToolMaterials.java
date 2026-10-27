@@ -190,7 +190,9 @@ public final class ToolMaterials {
                         boolean represented = true;
                         boolean overlaps = false;
                         for (OreDictMaterialStack part : returnedData.getAllMaterialStacks()) {
-                            if (part == null || part.mMaterial == null || part.mAmount < 0) return null;
+                            if (part == null || part.mMaterial == null) return null;
+                            if (part.mMaterial == MT.Empty && part.mAmount == -1) continue;
+                            if (part.mAmount < 0) return null;
                             Long amount = consumed.get(part.mMaterial);
                             if (amount != null && amount > 0) overlaps = true;
                             if (amount == null || amount < part.mAmount) represented = false;
@@ -232,7 +234,11 @@ public final class ToolMaterials {
 
     private static boolean accumulate(Map<OreDictMaterial, Long> totals, OreDictItemData data, int sign) {
         for (OreDictMaterialStack component : data.getAllMaterialStacks()) {
-            if (component == null || component.mMaterial == null || component.mAmount < 0) return false;
+            if (component == null || component.mMaterial == null) return false;
+            // GT6 includes Empty:-1 as a nonphysical placeholder in some
+            // material lists. It must not contribute to conserved mass.
+            if (component.mMaterial == MT.Empty && component.mAmount == -1) continue;
+            if (component.mAmount < 0) return false;
             Long old = totals.get(component.mMaterial);
             long previous = old == null ? 0 : old;
             long delta = sign * component.mAmount;
