@@ -14,13 +14,18 @@ import java.util.List;
 public final class MixerInheritanceBridge {
     private static final String ORIGINAL = "zenovka.original.mats";
     private static final String RECYCLING = "gt.recycling.mats";
+    private static final ThreadLocal<ItemStack> INPUT = new ThreadLocal<ItemStack>();
     private MixerInheritanceBridge() {}
 
-    public static ItemStack snapshot(ItemStack input) {
-        return input == null ? null : input.copy();
+    public static void clear() { INPUT.remove(); }
+
+    public static void snapshot(ItemStack input) {
+        INPUT.set(input == null ? null : input.copy());
     }
 
-    public static void apply(MultiTileEntityBasicMachine machine, ItemStack primary) {
+    public static void apply(MultiTileEntityBasicMachine machine) {
+        ItemStack primary = INPUT.get();
+        INPUT.remove();
         if (machine.mRecipes != RM.Mixer || primary == null || machine.mCurrentRecipe == null
                 || machine.mOutputItems == null || machine.mOutputItems.length == 0) return;
         ItemStack output = machine.mOutputItems[0];
