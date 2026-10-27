@@ -8,6 +8,7 @@ import gregapi.oredict.OreDictMaterial;
 import gregapi.oredict.OreDictMaterialStack;
 import gregapi.util.OM;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
@@ -46,6 +47,11 @@ public final class FoodMaterials {
      * Called before the crafting result is placed in its preview slot.
      * Never mutate the recipe template supplied by CraftingManager.
      */
+    // Exact descriptor expected by the obfuscated CraftingManager call site.
+    public static ItemStack preview(ItemStack template, InventoryCrafting matrix) {
+        return preview(template, (IInventory) matrix);
+    }
+
     public static ItemStack preview(ItemStack template, IInventory matrix) {
         if (template == null || matrix == null) return template;
         ItemStack output = template.copy();
