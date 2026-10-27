@@ -37,11 +37,17 @@ public final class MixerInheritanceBridge {
 
     public static ItemStack[] bowlOutputs(Recipe recipe) {
         ItemStack[] outputs = recipe.getOutputs();
-        ItemStack primary = INPUT.get();
-        INPUT.remove();
-        if (primary != null && outputs != null && outputs.length > 0)
-            inherit(recipe, primary, outputs[0]);
-        return outputs;
+        try {
+            if (outputs != null && outputs.length > 0) {
+                if (CONSUMED.get() != null && !CONSUMED.get().isEmpty()) {
+                    diagnostic("Manual bowl: using recorded consumption");
+                    inheritConsumed(outputs[0]);
+                } else diagnostic("Manual bowl: no recorded materials; leaving output unchanged");
+            }
+            return outputs;
+        } finally {
+            clear();
+        }
     }
 
     /** @deprecated Legacy first-input snapshot, retained for the mixing bowl hook. */
