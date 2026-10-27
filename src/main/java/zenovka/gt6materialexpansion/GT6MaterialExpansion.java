@@ -39,6 +39,7 @@ public final class GT6MaterialExpansion {
     public static OreDictMaterial PlantMatter;
     public static OreDictMaterial OrganicMatter;
     public static OreDictMaterial Mycelium;
+    public static OreDictMaterial AppleFruit, Carrot, Egg;
     public static OreDictMaterial Keratin, Silk, Chitin, Cotton, Hemp, Flax, Fibre, Wool;
 	
     public static OreDictMaterial ChickenRaw;
@@ -70,6 +71,12 @@ public final class GT6MaterialExpansion {
         Mycelium = OreDictMaterial.createMaterial(32027, "Mycelium", "Mycelium");
         // Provisional bulk density; revisit against GT6 mushroom processing.
         Mycelium.setDensity(0.25D);
+        AppleFruit = OreDictMaterial.createMaterial(32037, "AppleFruit", "Apple").setDensity(0.85D);
+        AppleFruit.setRGBa(190, 55, 45, 255);
+        Carrot = OreDictMaterial.createMaterial(32038, "Carrot", "Carrot").setDensity(0.95D);
+        Carrot.setRGBa(235, 125, 35, 255);
+        Egg = OreDictMaterial.createMaterial(32039, "Egg", "Egg").setDensity(1.03D);
+        Egg.setRGBa(235, 220, 185, 255);
         // Composition-only biological materials; densities are provisional.
         Keratin = OreDictMaterial.createMaterial(32028, "Keratin", "Keratin").setDensity(1.30D);
         Silk = OreDictMaterial.createMaterial(32029, "Silk", "Silk").setDensity(1.30D);
@@ -225,7 +232,7 @@ public final class GT6MaterialExpansion {
         // Vanilla torches are invariant, fuel-agnostic objects; no per-stack NBT.
         // Respect any composition another mod may have registered.
         assignIfMissing("minecraft:torch", 0, MT.Wood, U / 2);
-        FoodMaterials.register(); // Per-stack composition of crafted foods; no global overrides.
+        FoodMaterials.register(AppleFruit, Carrot, Egg); // Per-stack composition of crafted foods; no global overrides.
         ToolMaterials.register(); // Experimental GT6 shovel-only composition probe.\n        // Additional item associations will follow after pack-specific verification.
         overrideMeatItem("minecraft:chicken", 0, ChickenRaw);
         overrideMeatItem("minecraft:cooked_chicken", 0, ChickenCooked);
