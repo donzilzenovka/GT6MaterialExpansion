@@ -4,6 +4,9 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import gregapi.oredict.OreDictItemData;
+import gregapi.oredict.OreDictManager;
+import gregapi.data.CS;
+import net.minecraft.item.Item;
 import gregapi.oredict.OreDictMaterial;
 import gregapi.oredict.OreDictMaterialStack;
 import gregapi.util.OM;
@@ -29,8 +32,19 @@ public final class FoodMaterials {
 
     private FoodMaterials() {}
 
-    public static void register() {
+    public static void register(OreDictMaterial apple, OreDictMaterial carrot, OreDictMaterial egg) {
+        assignIfMissing("minecraft:apple", apple);
+        assignIfMissing("minecraft:carrot", carrot);
+        assignIfMissing("minecraft:egg", egg);
         FMLCommonHandler.instance().bus().register(new FoodMaterials());
+    }
+
+    private static void assignIfMissing(String id, OreDictMaterial material) {
+        Object registered = Item.itemRegistry.getObject(id);
+        if (!(registered instanceof Item)) return;
+        ItemStack stack = new ItemStack((Item) registered, 1, 0);
+        if (OreDictManager.INSTANCE.getItemData(stack) == null)
+            OreDictManager.INSTANCE.addItemData(stack, new OreDictItemData(material, CS.U));
     }
 
     @SubscribeEvent
