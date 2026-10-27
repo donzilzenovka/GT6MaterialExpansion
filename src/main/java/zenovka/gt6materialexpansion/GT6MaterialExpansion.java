@@ -225,6 +225,7 @@ public final class GT6MaterialExpansion {
         // Vanilla torches are invariant, fuel-agnostic objects; no per-stack NBT.
         // Respect any composition another mod may have registered.
         assignIfMissing("minecraft:torch", 0, MT.Wood, U / 2);
+        FoodMaterials.register(); // Per-stack composition of crafted foods; no global overrides.
         ToolMaterials.register(); // Experimental GT6 shovel-only composition probe.\n        // Additional item associations will follow after pack-specific verification.
         overrideMeatItem("minecraft:chicken", 0, ChickenRaw);
         overrideMeatItem("minecraft:cooked_chicken", 0, ChickenCooked);
