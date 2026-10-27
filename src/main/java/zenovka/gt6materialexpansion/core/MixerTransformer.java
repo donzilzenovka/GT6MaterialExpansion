@@ -7,12 +7,52 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
 public final class MixerTransformer implements IClassTransformer, Opcodes {
+    private static final String CRAFTING = "net.minecraft.item.crafting.CraftingManager";
     private static final String FURNACE = "net.minecraft.tileentity.TileEntityFurnace";
     private static final String FURNACE_BRIDGE = "zenovka/gt6materialexpansion/core/FurnaceInheritanceBridge";
     private static final String TARGET = "gregapi.tileentity.machines.MultiTileEntityBasicMachine";
     private static final String BOWL = "gregtech.tileentity.tools.MultiTileEntityMixingBowl";
     private static final String OWNER = "gregapi/tileentity/machines/MultiTileEntityBasicMachine";
     private static final String BRIDGE = "zenovka/gt6materialexpansion/core/MixerInheritanceBridge";
+
+    private byte[] transformCrafting(byte[] bytes) {
+        try {
+            ClassNode node = new ClassNode();
+            new ClassReader(bytes).accept(node, 0);
+            int matches = 0;
+            for (MethodNode method : node.methods) {
+                boolean readable = ("findMatchingRecipe".equals(method.name)
+                        || "func_82787_a".equals(method.name))
+                        && "(Lnet/minecraft/inventory/InventoryCrafting;Lnet/minecraft/world/World;)Lnet/minecraft/item/ItemStack;".equals(method.desc);
+                if (!readable) continue;
+                // Result is on stack at each ARETURN; matrix is local 1.
+                for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
+                    if (insn.getOpcode() != ARETURN) continue;
+                    InsnList hook = new InsnList();
+                    hook.add(new VarInsnNode(ALOAD, 1));
+                    hook.add(new MethodInsnNode(INVOKESTATIC,
+                            "zenovka/gt6materialexpansion/FoodMaterials", "preview",
+                            "(Lnet/minecraft/item/ItemStack;Lnet/minecraft/inventory/IInventory;)Lnet/minecraft/item/ItemStack;", false));
+                    method.instructions.insertBefore(insn, hook);
+                    matches++;
+                }
+            }
+            if (matches == 0) {
+                System.err.println("[GT6MaterialExpansion/Crafting] No readable recipe lookup found; incoming method signatures:");
+                for (MethodNode method : node.methods)
+                    System.err.println("[GT6MaterialExpansion/Crafting] " + method.name + method.desc);
+                return bytes;
+            }
+            ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            node.accept(writer);
+            System.out.println("[GT6MaterialExpansion] Installed crafting preview inheritance hook (" + matches + " returns).");
+            return writer.toByteArray();
+        } catch (Throwable error) {
+            System.err.println("[GT6MaterialExpansion] Crafting preview ASM failed.");
+            error.printStackTrace();
+            return bytes;
+        }
+    }
 
     private byte[] transformFurnace(byte[] bytes) {
         try {
@@ -140,6 +180,7 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
     }
     @Override public byte[] transform(String name, String transformedName, byte[] bytes) {
         if (bytes == null) return bytes;
+        if (CRAFTING.equals(transformedName)) return transformCrafting(bytes);
         if (FURNACE.equals(transformedName)) return transformFurnace(bytes);
         if (BOWL.equals(transformedName)) return transformBowl(bytes);
         if (!TARGET.equals(transformedName)) return bytes;
