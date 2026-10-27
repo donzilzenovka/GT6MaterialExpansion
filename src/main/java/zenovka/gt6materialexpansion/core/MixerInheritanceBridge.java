@@ -65,18 +65,18 @@ public final class MixerInheritanceBridge {
         if (output == null || output.stackSize <= 0) { diagnostic("Empty primary output"); return; }
         NBTTagCompound existing = output.getTagCompound();
         if (existing != null && existing.hasKey(ORIGINAL)) return;
-        if (recipe.mInputs == null || machine.mCurrentRecipe.mInputs.length == 0
-                || machine.mCurrentRecipe.mInputs[0] == null) { diagnostic("No recipe primary item input"); return; }
+        if (recipe.mInputs == null || recipe.mInputs.length == 0
+                || recipe.mInputs[0] == null) { diagnostic("No recipe primary item input"); return; }
         OreDictItemData data = OM.anydata(primary);
         if (data == null || data.getAllMaterialStacks().isEmpty()) { diagnostic("No material data on primary input " + primary); return; }
 
         // Primary ingredient count per operation; infer operations from primary output count.
         ItemStack recipeOutput = recipe.mOutputs == null
-                || machine.mCurrentRecipe.mOutputs.length == 0 ? null : machine.mCurrentRecipe.mOutputs[0];
+                || recipe.mOutputs.length == 0 ? null : recipe.mOutputs[0];
         if (recipeOutput == null || recipeOutput.stackSize <= 0) { diagnostic("Missing recipe primary output"); return; }
         if (output.stackSize % recipeOutput.stackSize != 0) { diagnostic("Output count mismatch"); return; }
         long operations = output.stackSize / recipeOutput.stackSize;
-        long consumed = operations * machine.mCurrentRecipe.mInputs[0].stackSize;
+        long consumed = operations * recipe.mInputs[0].stackSize;
         if (consumed <= 0 || consumed > primary.stackSize) { diagnostic("Input count mismatch: consumed=" + consumed + " available=" + primary.stackSize); return; }
 
         List<OreDictMaterialStack> parts = new ArrayList<OreDictMaterialStack>();
