@@ -200,17 +200,18 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
             new ClassReader(bytes).accept(node, 0);
             int patched = 0;
             for (MethodNode method : node.methods) {
-                int inputLocal = -1;
+                // The manual bowl consumes exactly one recipe per successful interaction.
+                // Replace the committed recipe call with the same tracker used by powered mixers.
                 for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
                     if (!(insn instanceof MethodInsnNode)) continue;
                     MethodInsnNode call = (MethodInsnNode) insn;
                     if (!"gregapi/recipes/Recipe".equals(call.owner) || !"isRecipeInputEqual".equals(call.name)) continue;
-                    // The actual ItemStack[] is the final argument on the operand stack.
-                    // DUP preserves it for GT6 while passing a copy to our snapshot helper.
-                    InsnList capture = new InsnList();
-                    capture.add(new InsnNode(DUP));
-                    capture.add(new MethodInsnNode(INVOKESTATIC, BRIDGE, "snapshotInputs", "([Lnet/minecraft/item/ItemStack;)V", false));
-                    method.instructions.insertBefore(insn, capture);
+                    if (!"(ZZ[Lnet/minecraftforge/fluids/IFluidTank;[Lnet/minecraft/item/ItemStack;)Z".equals(call.desc)) continue;
+                    call.setOpcode(INVOKESTATIC);
+                    call.owner = BRIDGE;
+                    call.name = "consume";
+                    call.desc = "(Lgregapi/recipes/Recipe;ZZ[Lnet/minecraftforge/fluids/IFluidTank;[Lnet/minecraft/item/ItemStack;)Z";
+                    call.itf = false;
                     patched++;
                 }
                 for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
