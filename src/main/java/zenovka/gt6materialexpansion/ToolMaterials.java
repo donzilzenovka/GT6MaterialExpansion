@@ -44,18 +44,31 @@ public final class ToolMaterials {
     @SubscribeEvent
     public void onCrafted(PlayerEvent.ItemCraftedEvent event) {
         ItemStack result = event.crafting;
-        if (result == null || !(result.getItem() instanceof MultiItemTool)) return;
-        if (event.craftMatrix == null) return;
+        if (result == null || event.craftMatrix == null) return;
         NBTTagCompound existing = result.getTagCompound();
-        if (existing != null && existing.hasKey(RECYCLING_TAG)) return;
+        // A previously established stack-specific composition always wins.
+        if (existing != null && (existing.hasKey(RECYCLING_TAG) || existing.hasKey(ORIGINAL_TAG))) return;
+
+        boolean tool = result.getItem() instanceof MultiItemTool;
+        // For ordinary items, respect GT6's existing material association (e.g. sticks).
+        // Tools retain their established recipe-derived original-material behaviour.
+        if (!tool) {
+            OreDictItemData outputData = OM.anydata(result);
+            if (outputData != null && !outputData.getAllMaterialStacks().isEmpty()) return;
+        }
 
         List<OreDictMaterialStack> components = resolveIngredients(event.craftMatrix, result.stackSize);
         if (components == null || components.isEmpty()) return;
 
         NBTTagCompound tag = existing == null ? new NBTTagCompound() : existing;
-        OreDictMaterialStack.saveList(ORIGINAL_TAG, tag, components);
-        result.setTagCompound(tag);
-        synchronize(result);
+        if (tool) {
+            OreDictMaterialStack.saveList(ORIGINAL_TAG, tag, components);
+            result.setTagCompound(tag);
+            synchronize(result);
+        } else {
+            OreDictMaterialStack.saveList(RECYCLING_TAG, tag, components);
+            result.setTagCompound(tag);
+        }
     }
 
 
