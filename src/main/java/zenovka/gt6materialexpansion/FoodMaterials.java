@@ -11,7 +11,6 @@ import gregapi.oredict.OreDictMaterial;
 import gregapi.oredict.OreDictMaterialStack;
 import gregapi.util.OM;
 import net.minecraft.inventory.IInventory;
-import net.minecraft.item.ItemFood;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
@@ -50,7 +49,7 @@ public final class FoodMaterials {
     @SubscribeEvent
     public void onCrafted(PlayerEvent.ItemCraftedEvent event) {
         ItemStack output = event.crafting;
-        if (output == null || !(output.getItem() instanceof ItemFood) || event.craftMatrix == null) return;
+        if (output == null || event.craftMatrix == null) return;
         NBTTagCompound existing = output.getTagCompound();
         if (existing != null && existing.hasKey(ORIGINAL_TAG)) return;
 
