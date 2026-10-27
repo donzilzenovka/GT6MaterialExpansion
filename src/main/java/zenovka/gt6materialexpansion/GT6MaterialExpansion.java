@@ -40,6 +40,7 @@ public final class GT6MaterialExpansion {
     public static OreDictMaterial OrganicMatter;
     public static OreDictMaterial Mycelium;
     public static OreDictMaterial AppleFruit, Carrot, Egg;
+    public static OreDictMaterial HeavyCream, CoconutCream;
     public static OreDictMaterial Keratin, Silk, Chitin, Cotton, Hemp, Flax, Fibre, Wool;
 	
     public static OreDictMaterial ChickenRaw;
@@ -76,6 +77,9 @@ public final class GT6MaterialExpansion {
         Carrot = OreDictMaterial.createMaterial(32038, "Carrot", "Carrot").setDensity(0.95D);
         Carrot.setRGBa(235, 125, 35, 255);
         Egg = OreDictMaterial.createMaterial(32039, "Egg", "Egg").setDensity(1.03D);
+        // Composition-only counterparts to GT6 food fluids; do not alter MT.Cream (-1).
+        HeavyCream = OreDictMaterial.createMaterial(32040, "HeavyCream", "Heavy Cream").setDensity(0.99D);
+        CoconutCream = OreDictMaterial.createMaterial(32041, "CoconutCream", "Coconut Cream").setDensity(1.00D);
         Egg.setRGBa(235, 220, 185, 255);
         // Composition-only biological materials; densities are provisional.
         Keratin = OreDictMaterial.createMaterial(32028, "Keratin", "Keratin").setDensity(1.30D);
@@ -233,6 +237,11 @@ public final class GT6MaterialExpansion {
         // Respect any composition another mod may have registered.
         assignIfMissing("minecraft:torch", 0, MT.Wood, U / 2);
         FoodMaterials.register(AppleFruit, Carrot, Egg); // Per-stack composition of crafted foods; no global overrides.
+        // Bottled food fluids and ice cream lack item-material data in GT6.
+        // Existing assignments take precedence; no recipe ingredient (including salt) is inferred.
+        assignIfMissing("gregtech:gt.multiitem.bottles", 1101, HeavyCream, U);
+        assignIfMissing("gregtech:gt.multiitem.bottles", 5604, CoconutCream, U);
+        assignIfMissing("gregtech:gt.multiitem.food", 13000, HeavyCream, U);
         ToolMaterials.register(); // Experimental GT6 shovel-only composition probe.\n        // Additional item associations will follow after pack-specific verification.
         overrideMeatItem("minecraft:chicken", 0, ChickenRaw);
         overrideMeatItem("minecraft:cooked_chicken", 0, ChickenCooked);
