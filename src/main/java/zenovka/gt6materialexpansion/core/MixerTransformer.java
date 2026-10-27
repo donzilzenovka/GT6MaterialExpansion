@@ -4,6 +4,7 @@ import net.minecraft.launchwrapper.IClassTransformer;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
 public final class MixerTransformer implements IClassTransformer, Opcodes {
@@ -14,6 +15,66 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
     private static final String BOWL = "gregtech.tileentity.tools.MultiTileEntityMixingBowl";
     private static final String OWNER = "gregapi/tileentity/machines/MultiTileEntityBasicMachine";
     private static final String BRIDGE = "zenovka/gt6materialexpansion/core/MixerInheritanceBridge";
+
+    private byte[] transformTransfer(byte[] bytes, boolean slotClass) {
+        try {
+            ClassNode node = new ClassNode();
+            new ClassReader(bytes).accept(node, 0);
+            int patched = 0;
+            for (MethodNode method : node.methods) {
+                if ((method.access & (ACC_STATIC | ACC_ABSTRACT | ACC_NATIVE)) != 0) continue;
+                Type[] args = Type.getArgumentTypes(method.desc);
+                Type result = Type.getReturnType(method.desc);
+                boolean playerFirst = args.length > 0 && args[0].getSort() == Type.OBJECT
+                        && (args[0].getInternalName().equals("yz")
+                        || args[0].getInternalName().equals("net/minecraft/entity/player/EntityPlayer"));
+                boolean transfer = !slotClass && playerFirst && args.length == 2
+                        && args[1].getSort() == Type.INT && result.getSort() == Type.OBJECT;
+                boolean pickup = slotClass && playerFirst && args.length == 2
+                        && args[1].getSort() == Type.OBJECT && result.getSort() == Type.VOID;
+                boolean remove = slotClass && args.length == 1 && args[0].getSort() == Type.INT
+                        && result.getSort() == Type.OBJECT;
+                if (!transfer && !pickup && !remove) continue;
+                String label = (slotClass ? "SlotCrafting." : "ContainerWorkbench.") + method.name + method.desc;
+                InsnList start = new InsnList();
+                start.add(new VarInsnNode(ALOAD, 0));
+                start.add(new LdcInsnNode("ENTER " + label));
+                if (playerFirst) start.add(new VarInsnNode(ALOAD, 1));
+                else start.add(new InsnNode(ACONST_NULL));
+                start.add(new MethodInsnNode(INVOKESTATIC,
+                        "zenovka/gt6materialexpansion/core/CraftTransferDiagnostic", "trace",
+                        "(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;)V", false));
+                method.instructions.insert(start);
+                for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
+                    if (insn.getOpcode() != ARETURN && insn.getOpcode() != RETURN) continue;
+                    InsnList end = new InsnList();
+                    end.add(new VarInsnNode(ALOAD, 0));
+                    end.add(new LdcInsnNode("EXIT " + label));
+                    if (playerFirst) end.add(new VarInsnNode(ALOAD, 1));
+                    else end.add(new InsnNode(ACONST_NULL));
+                    end.add(new MethodInsnNode(INVOKESTATIC,
+                            "zenovka/gt6materialexpansion/core/CraftTransferDiagnostic", "trace",
+                            "(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;)V", false));
+                    method.instructions.insertBefore(insn, end);
+                }
+                patched++;
+            }
+            System.out.println("[GT6MaterialExpansion/TransferDiagnostic] "
+                    + (slotClass ? "SlotCrafting" : "ContainerWorkbench") + " traced methods=" + patched);
+            if (patched == 0) {
+                for (MethodNode method : node.methods)
+                    System.out.println("[GT6MaterialExpansion/TransferDiagnostic] CANDIDATE " + method.name + method.desc);
+                return bytes;
+            }
+            ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            node.accept(writer);
+            return writer.toByteArray();
+        } catch (Throwable error) {
+            System.err.println("[GT6MaterialExpansion/TransferDiagnostic] Transfer instrumentation failed.");
+            error.printStackTrace();
+            return bytes;
+        }
+    }
 
     private byte[] transformCrafting(byte[] bytes) {
         try {
@@ -182,6 +243,8 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
     }
     @Override public byte[] transform(String name, String transformedName, byte[] bytes) {
         if (bytes == null) return bytes;
+        if ("net.minecraft.inventory.SlotCrafting".equals(transformedName)) return transformTransfer(bytes, true);
+        if ("net.minecraft.inventory.ContainerWorkbench".equals(transformedName)) return transformTransfer(bytes, false);
         if (CRAFTING.equals(transformedName)) return transformCrafting(bytes);
         if (FURNACE.equals(transformedName)) return transformFurnace(bytes);
         if (BOWL.equals(transformedName)) return transformBowl(bytes);
