@@ -17,13 +17,16 @@ public final class MixerInheritanceBridge {
     private static final String RECYCLING = "gt.recycling.mats";
     private static final ThreadLocal<ItemStack> INPUT = new ThreadLocal<ItemStack>();
     private static int diagnostics = 0;
+    private static final int DIAGNOSTIC_LIMIT = 160;
     private MixerInheritanceBridge() {}
     private static void diagnostic(String message) {
-        if (diagnostics++ < 20) System.out.println("[GT6MaterialExpansion/Mixer] " + message);
+        if (diagnostics++ < DIAGNOSTIC_LIMIT) System.out.println("[GT6MaterialExpansion/Mixer] " + message);
     }
 
     public static void clear() { INPUT.remove(); CONSUMED.remove(); }
 
+    /** @deprecated Legacy first-slot snapshot. Remove after consumption-based inheritance is validated. */
+    @Deprecated
     public static void snapshotInputs(ItemStack[] inputs) {
         ItemStack primary = null;
         if (inputs != null) for (ItemStack item : inputs) {
@@ -41,6 +44,8 @@ public final class MixerInheritanceBridge {
         return outputs;
     }
 
+    /** @deprecated Legacy first-input snapshot, retained for the mixing bowl hook. */
+    @Deprecated
     public static void snapshot(ItemStack input) {
         INPUT.set(input == null ? null : input.copy());
     }
@@ -53,7 +58,7 @@ public final class MixerInheritanceBridge {
                                   net.minecraftforge.fluids.IFluidTank[] tanks, ItemStack[] inputs) {
         ItemStack[] before = copies(inputs);
         boolean success = recipe.isRecipeInputEqual(decrease, dontCheck, tanks, inputs);
-        if (success && decrease) record(before, inputs);
+        if (success && decrease) { diagnostic("Committed normal consumption"); record(before, inputs); }
         return success;
     }
 
@@ -61,7 +66,7 @@ public final class MixerInheritanceBridge {
                                       net.minecraftforge.fluids.IFluidTank[] tanks, ItemStack[] inputs) {
         ItemStack[] before = copies(inputs);
         int completed = recipe.isRecipeInputEqual(max, tanks, inputs);
-        if (completed > 0) record(before, inputs);
+        if (completed > 0) { diagnostic("Committed parallel consumption batches=" + completed); record(before, inputs); }
         return completed;
     }
 
@@ -74,7 +79,7 @@ public final class MixerInheritanceBridge {
     }
 
     private static void record(ItemStack[] before, ItemStack[] after) {
-        if (before == null || after == null) return;
+        if (before == null || after == null) { diagnostic("Cannot record: missing input array"); return; }
         java.util.Map<gregapi.oredict.OreDictMaterial, Long> totals = CONSUMED.get();
         if (totals == null) {
             totals = new java.util.HashMap<gregapi.oredict.OreDictMaterial, Long>();
@@ -86,31 +91,36 @@ public final class MixerInheritanceBridge {
             int remaining = after[i] == null ? 0 : after[i].stackSize;
             long used = (long) old.stackSize - remaining;
             if (used <= 0) continue;
+            diagnostic("Consumed slot=" + i + " item=" + old.getDisplayName() + " count=" + used + " from=" + old.stackSize + " to=" + remaining);
             OreDictItemData data = OM.anydata(old);
             if (data == null || data.getAllMaterialStacks() == null) {
+                diagnostic("Discarding consumption: no material data for " + old.getDisplayName());
                 CONSUMED.remove();
                 return;
             }
             for (OreDictMaterialStack part : data.getAllMaterialStacks()) {
                 if (part == null || part.mMaterial == null || part.mAmount < 0
                         || (used != 0 && part.mAmount > Long.MAX_VALUE / used)) {
+                    diagnostic("Discarding consumption: invalid or overflowing material on " + old.getDisplayName());
                     CONSUMED.remove();
                     return;
                 }
                 long delta = used * part.mAmount;
                 Long previous = totals.get(part.mMaterial);
                 long base = previous == null ? 0 : previous;
-                if (delta > Long.MAX_VALUE - base) { CONSUMED.remove(); return; }
+                if (delta > Long.MAX_VALUE - base) { diagnostic("Discarding consumption: accumulated material overflow"); CONSUMED.remove(); return; }
                 totals.put(part.mMaterial, base + delta);
+                diagnostic("Material id=" + part.mMaterial.mID + " amountAdded=" + delta + " total=" + (base + delta));
             }
         }
     }
 
     private static void inheritConsumed(ItemStack output) {
         java.util.Map<gregapi.oredict.OreDictMaterial, Long> totals = CONSUMED.get();
-        if (output == null || output.stackSize <= 0 || totals == null || totals.isEmpty()) return;
+        if (output == null || output.stackSize <= 0 || totals == null || totals.isEmpty()) { diagnostic("Consumed inheritance skipped: missing output or material totals"); return; }
+        diagnostic("Output " + output.getDisplayName() + " count=" + output.stackSize + " trackedMaterials=" + totals.size());
         NBTTagCompound existing = output.getTagCompound();
-        if (existing != null && existing.hasKey(ORIGINAL)) return;
+        if (existing != null && existing.hasKey(ORIGINAL)) { diagnostic("Consumed inheritance blocked: output already has " + ORIGINAL); return; }
         java.util.List<gregapi.oredict.OreDictMaterial> keys =
                 new java.util.ArrayList<gregapi.oredict.OreDictMaterial>(totals.keySet());
         java.util.Collections.sort(keys, new java.util.Comparator<gregapi.oredict.OreDictMaterial>() {
@@ -121,19 +131,21 @@ public final class MixerInheritanceBridge {
         List<OreDictMaterialStack> parts = new ArrayList<OreDictMaterialStack>();
         for (gregapi.oredict.OreDictMaterial material : keys) {
             long amount = totals.get(material);
-            if (amount % output.stackSize != 0) return;
+            if (amount % output.stackSize != 0) { diagnostic("Consumed inheritance blocked: non-integral split id=" + material.mID + " amount=" + amount); return; }
             if (amount > 0) parts.add(OM.stack(material, amount / output.stackSize));
         }
-        if (parts.isEmpty()) return;
+        if (parts.isEmpty()) { diagnostic("Consumed inheritance skipped: no positive material parts"); return; }
         NBTTagCompound tag = existing == null ? new NBTTagCompound() : existing;
         OreDictMaterialStack.saveList(ORIGINAL, tag, parts);
         OreDictMaterialStack.saveList(RECYCLING, tag, parts);
         output.setTagCompound(tag);
+        diagnostic("Consumed inheritance applied materials=" + parts.size());
     }
 
     public static void apply(MultiTileEntityBasicMachine machine) {
         ItemStack primary = INPUT.get();
         INPUT.remove();
+        diagnostic("Mixer apply: tracked=" + (CONSUMED.get() == null ? "null" : CONSUMED.get().size()) + " legacyPrimary=" + (primary != null));
         if (machine.mRecipes != RM.Mixer) {
             if (primary != null) diagnostic("Recipe map differs from RM.Mixer: " + machine.mRecipes);
             return;
@@ -145,10 +157,13 @@ public final class MixerInheritanceBridge {
         }
         ItemStack output = machine.mOutputItems[0];
         if (CONSUMED.get() != null && !CONSUMED.get().isEmpty()) inheritConsumed(output);
-        else inherit(machine.mCurrentRecipe, primary, output);
+        else if (primary != null) { diagnostic("DEPRECATED first-primary fallback selected"); inherit(machine.mCurrentRecipe, primary, output); }
+        else diagnostic("No tracked materials and no fallback primary");
         CONSUMED.remove();
     }
 
+    /** @deprecated First-primary-only material inheritance; retained temporarily for bowl and fallback. */
+    @Deprecated
     private static void inherit(Recipe recipe, ItemStack primary, ItemStack output) {
         if (output == null || output.stackSize <= 0) { diagnostic("Empty primary output"); return; }
         NBTTagCompound existing = output.getTagCompound();
