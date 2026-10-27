@@ -1,8 +1,5 @@
 package zenovka.gt6materialexpansion;
 
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.gameevent.PlayerEvent;
 import gregapi.oredict.OreDictItemData;
 import gregapi.oredict.OreDictManager;
 import gregapi.data.CS;
@@ -35,7 +32,6 @@ public final class FoodMaterials {
         assignIfMissing("minecraft:apple", apple);
         assignIfMissing("minecraft:carrot", carrot);
         assignIfMissing("minecraft:egg", egg);
-        FMLCommonHandler.instance().bus().register(new FoodMaterials());
     }
 
     private static void assignIfMissing(String id, OreDictMaterial material) {
@@ -46,26 +42,25 @@ public final class FoodMaterials {
             OreDictManager.INSTANCE.addItemData(stack, new OreDictItemData(material, CS.U));
     }
 
-    @SubscribeEvent
-    public void onCrafted(PlayerEvent.ItemCraftedEvent event) {
-        ItemStack output = event.crafting;
-        if (output == null || event.craftMatrix == null) return;
+    /**
+     * Called before the crafting result is placed in its preview slot.
+     * Never mutate the recipe template supplied by CraftingManager.
+     */
+    public static ItemStack preview(ItemStack template, IInventory matrix) {
+        if (template == null || matrix == null) return template;
+        ItemStack output = template.copy();
         NBTTagCompound existing = output.getTagCompound();
-        if (existing != null && existing.hasKey(ORIGINAL_TAG)) return;
-
-        // Registered GT6 output compositions are authoritative. Only fill gaps.
-        // getItemData reads the registry rather than the dynamic stack provenance.
+        if (existing != null && existing.hasKey(ORIGINAL_TAG)) return output;
         OreDictItemData canonical = OreDictManager.INSTANCE.getItemData(output);
         if (canonical != null && canonical.getAllMaterialStacks() != null
-                && !canonical.getAllMaterialStacks().isEmpty()) return;
-
-        List<OreDictMaterialStack> materials = derive(event.craftMatrix, output.stackSize);
-        if (materials == null || materials.isEmpty()) return;
-
+                && !canonical.getAllMaterialStacks().isEmpty()) return output;
+        List<OreDictMaterialStack> materials = derive(matrix, output.stackSize);
+        if (materials == null || materials.isEmpty()) return output;
         NBTTagCompound tag = existing == null ? new NBTTagCompound() : existing;
         OreDictMaterialStack.saveList(ORIGINAL_TAG, tag, materials);
         OreDictMaterialStack.saveList(RECYCLING_TAG, tag, materials);
         output.setTagCompound(tag);
+        return output;
     }
 
     private static List<OreDictMaterialStack> derive(IInventory matrix, int count) {
