@@ -15,6 +15,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
 import java.util.ArrayList;
+import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,10 +57,62 @@ public final class FoodMaterials {
         List<OreDictMaterialStack> materials = derive(event.craftMatrix, output.stackSize);
         if (materials == null || materials.isEmpty()) return;
 
+        // A globally registered GT6 output quantity is a manufacturing yield,
+        // not a mandate to replace the actual input's material identities.
+        // Only reduce derived quantities; never invent missing material.
+        OreDictItemData canonical = OreDictManager.INSTANCE.getItemData(output);
+        if (canonical != null && !canonical.getAllMaterialStacks().isEmpty()) {
+            long limit = 0;
+            boolean valid = true;
+            for (OreDictMaterialStack part : canonical.getAllMaterialStacks()) {
+                if (part == null || part.mAmount < 0 || Long.MAX_VALUE - limit < part.mAmount) {
+                    valid = false;
+                    break;
+                }
+                limit += part.mAmount;
+            }
+            if (valid && limit > 0) materials = capToYield(materials, limit);
+        }
+        if (materials.isEmpty()) return;
+
         NBTTagCompound tag = existing == null ? new NBTTagCompound() : existing;
         OreDictMaterialStack.saveList(ORIGINAL_TAG, tag, materials);
         OreDictMaterialStack.saveList(RECYCLING_TAG, tag, materials);
         output.setTagCompound(tag);
+    }
+
+    /**
+     * Scale only when the recipe-derived quantity exceeds the registered yield.
+     * BigInteger avoids overflow for GT6's long-valued material units. Remainders
+     * are distributed by largest fractional share so the final sum equals the cap.
+     */
+    private static List<OreDictMaterialStack> capToYield(List<OreDictMaterialStack> parts, long limit) {
+        BigInteger total = BigInteger.ZERO;
+        for (OreDictMaterialStack part : parts) total = total.add(BigInteger.valueOf(part.mAmount));
+        BigInteger cap = BigInteger.valueOf(limit);
+        if (total.signum() <= 0 || total.compareTo(cap) <= 0) return parts;
+
+        long[] amounts = new long[parts.size()];
+        BigInteger[] fractions = new BigInteger[parts.size()];
+        long allocated = 0;
+        for (int i = 0; i < parts.size(); i++) {
+            BigInteger[] div = BigInteger.valueOf(parts.get(i).mAmount).multiply(cap).divideAndRemainder(total);
+            amounts[i] = div[0].longValue();
+            fractions[i] = div[1];
+            allocated += amounts[i];
+        }
+        long remainder = limit - allocated;
+        for (long n = 0; n < remainder; n++) {
+            int best = 0;
+            for (int i = 1; i < fractions.length; i++)
+                if (fractions[i].compareTo(fractions[best]) > 0) best = i;
+            amounts[best]++;
+            fractions[best] = BigInteger.valueOf(-1);
+        }
+        List<OreDictMaterialStack> scaled = new ArrayList<OreDictMaterialStack>();
+        for (int i = 0; i < parts.size(); i++)
+            if (amounts[i] > 0) scaled.add(OM.stack(parts.get(i).mMaterial, amounts[i]));
+        return scaled;
     }
 
     private static List<OreDictMaterialStack> derive(IInventory matrix, int count) {
