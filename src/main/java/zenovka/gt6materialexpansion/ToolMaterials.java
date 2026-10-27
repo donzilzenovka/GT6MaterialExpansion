@@ -159,15 +159,47 @@ public final class ToolMaterials {
                 return null;
             }
             if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Input slot %d: %s, components=%d", slot, single.getDisplayName(), data.getAllMaterialStacks().size());
-            if (!accumulate(totals, data, 1)) return null;
+            // Keep each ingredient separate: a returned container must never
+            // subtract material supplied by a different recipe ingredient.
+            Map<OreDictMaterial, Long> consumed = new LinkedHashMap<OreDictMaterial, Long>();
+            if (!accumulate(consumed, data, 1)) return null;
 
             if (single.getItem().hasContainerItem(single)) {
                 ItemStack returned = single.getItem().getContainerItem(single);
                 if (returned != null) {
                     OreDictItemData returnedData = OM.anydata(returned);
                     if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Returned container: %s, material data=%s", returned.getDisplayName(), returnedData == null ? "missing" : "present");
-                    if (returnedData == null || !accumulate(totals, returnedData, -1)) return null;
+                    if (returnedData != null && !returnedData.getAllMaterialStacks().isEmpty()) {
+                        // Some filled containers (notably GT6 Heavy Cream) describe
+                        // their contents only; their glass is not in the input data.
+                        // Subtract a returned container only when its entire
+                        // composition is actually included in this ingredient.
+                        boolean represented = true;
+                        boolean overlaps = false;
+                        for (OreDictMaterialStack part : returnedData.getAllMaterialStacks()) {
+                            if (part == null || part.mMaterial == null || part.mAmount < 0) return null;
+                            Long amount = consumed.get(part.mMaterial);
+                            if (amount != null && amount > 0) overlaps = true;
+                            if (amount == null || amount < part.mAmount) represented = false;
+                        }
+                        if (represented) {
+                            if (!accumulate(consumed, returnedData, -1)) return null;
+                            if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Container material subtracted from ingredient");
+                        } else if (!overlaps) {
+                            if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Container material not represented in ingredient; no subtraction");
+                        } else {
+                            if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Container partly represented; skipping ambiguous recipe");
+                            return null;
+                        }
+                    }
                 }
+            }
+            for (Map.Entry<OreDictMaterial, Long> part : consumed.entrySet()) {
+                Long previous = totals.get(part.getKey());
+                long before = previous == null ? 0 : previous;
+                long amount = part.getValue();
+                if (amount > Long.MAX_VALUE - before) return null;
+                totals.put(part.getKey(), before + amount);
             }
         }
         if (!found || outputCount <= 0) return null;
