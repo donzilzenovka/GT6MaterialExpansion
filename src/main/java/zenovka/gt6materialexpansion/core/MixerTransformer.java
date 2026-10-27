@@ -39,6 +39,27 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
                     patched++;
                 }
             }
+            // canSmelt() is k()Z in the observed notch runtime.
+            // Fail closed before vanilla's NBT-blind output capacity check.
+            int guards = 0;
+            for (MethodNode method : node.methods) {
+                boolean notchCanSmelt = "k".equals(method.name) && "()Z".equals(method.desc);
+                boolean readableCanSmelt = ("canSmelt".equals(method.name) || "func_145948_k".equals(method.name))
+                        && "()Z".equals(method.desc);
+                if (!notchCanSmelt && !readableCanSmelt) continue;
+                LabelNode allowed = new LabelNode();
+                InsnList guard = new InsnList();
+                guard.add(new VarInsnNode(ALOAD, 0));
+                guard.add(new MethodInsnNode(INVOKESTATIC, FURNACE_BRIDGE, "canAccept",
+                        "(Ljava/lang/Object;)Z", false));
+                guard.add(new JumpInsnNode(IFNE, allowed));
+                guard.add(new InsnNode(ICONST_0));
+                guard.add(new InsnNode(IRETURN));
+                guard.add(allowed);
+                method.instructions.insert(guard);
+                guards++;
+            }
+            System.out.println("[GT6MaterialExpansion] Furnace provenance output guards: " + guards);
             if (patched < 1) {
                 // The incoming class is still in notch-obfuscated form.
                 // Print every invocation in its two smelting routines, including
