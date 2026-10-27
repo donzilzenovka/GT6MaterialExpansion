@@ -163,7 +163,16 @@ public final class ToolMaterials {
             // subtract material supplied by a different recipe ingredient.
             Map<OreDictMaterial, Long> consumed = new LinkedHashMap<OreDictMaterial, Long>();
             if (!accumulate(consumed, data, 1)) {
-                if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Invalid ingredient material entry in slot %d", slot);
+                if (debugCake) {
+                    FMLLog.info("[GT6MaterialExpansion/Crafting] Invalid ingredient material entry in slot %d; full component details:", slot);
+                    int componentIndex = 0;
+                    for (OreDictMaterialStack component : data.getAllMaterialStacks()) {
+                        FMLLog.info("[GT6MaterialExpansion/Crafting] Component %d: material=%s, amount=%s",
+                            componentIndex++,
+                            component == null ? "<null stack>" : String.valueOf(component.mMaterial),
+                            component == null ? "<null stack>" : String.valueOf(component.mAmount));
+                    }
+                }
                 return null;
             }
 
