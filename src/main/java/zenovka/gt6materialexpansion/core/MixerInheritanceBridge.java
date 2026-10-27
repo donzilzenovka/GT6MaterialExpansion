@@ -1,6 +1,7 @@
 package zenovka.gt6materialexpansion.core;
 
 import gregapi.data.RM;
+import gregapi.recipes.Recipe;
 import gregapi.oredict.OreDictItemData;
 import gregapi.oredict.OreDictMaterialStack;
 import gregapi.tileentity.machines.MultiTileEntityBasicMachine;
@@ -23,6 +24,23 @@ public final class MixerInheritanceBridge {
 
     public static void clear() { INPUT.remove(); }
 
+    public static void snapshotInputs(ItemStack[] inputs) {
+        ItemStack primary = null;
+        if (inputs != null) for (ItemStack item : inputs) {
+            if (item != null && item.stackSize > 0) { primary = item; break; }
+        }
+        snapshot(primary);
+    }
+
+    public static ItemStack[] bowlOutputs(Recipe recipe) {
+        ItemStack[] outputs = recipe.getOutputs();
+        ItemStack primary = INPUT.get();
+        INPUT.remove();
+        if (primary != null && outputs != null && outputs.length > 0)
+            inherit(recipe, primary, outputs[0]);
+        return outputs;
+    }
+
     public static void snapshot(ItemStack input) {
         INPUT.set(input == null ? null : input.copy());
     }
@@ -40,16 +58,20 @@ public final class MixerInheritanceBridge {
             return;
         }
         ItemStack output = machine.mOutputItems[0];
+        inherit(machine.mCurrentRecipe, primary, output);
+    }
+
+    private static void inherit(Recipe recipe, ItemStack primary, ItemStack output) {
         if (output == null || output.stackSize <= 0) { diagnostic("Empty primary output"); return; }
         NBTTagCompound existing = output.getTagCompound();
         if (existing != null && existing.hasKey(ORIGINAL)) return;
-        if (machine.mCurrentRecipe.mInputs == null || machine.mCurrentRecipe.mInputs.length == 0
+        if (recipe.mInputs == null || machine.mCurrentRecipe.mInputs.length == 0
                 || machine.mCurrentRecipe.mInputs[0] == null) { diagnostic("No recipe primary item input"); return; }
         OreDictItemData data = OM.anydata(primary);
         if (data == null || data.getAllMaterialStacks().isEmpty()) { diagnostic("No material data on primary input " + primary); return; }
 
         // Primary ingredient count per operation; infer operations from primary output count.
-        ItemStack recipeOutput = machine.mCurrentRecipe.mOutputs == null
+        ItemStack recipeOutput = recipe.mOutputs == null
                 || machine.mCurrentRecipe.mOutputs.length == 0 ? null : machine.mCurrentRecipe.mOutputs[0];
         if (recipeOutput == null || recipeOutput.stackSize <= 0) { diagnostic("Missing recipe primary output"); return; }
         if (output.stackSize % recipeOutput.stackSize != 0) { diagnostic("Output count mismatch"); return; }
