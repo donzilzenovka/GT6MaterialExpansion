@@ -15,6 +15,21 @@ public final class FurnaceInheritanceBridge {
 
     private FurnaceInheritanceBridge() {}
 
+    /**
+     * Refuse smelting into an occupied slot when the new product carries
+     * different provenance. Vanilla's output check ignores NBT.
+     */
+    public static boolean canAccept(Object furnaceObject) {
+        if (!(furnaceObject instanceof net.minecraft.inventory.IInventory)) return true;
+        net.minecraft.inventory.IInventory furnace = (net.minecraft.inventory.IInventory) furnaceObject;
+        ItemStack input = furnace.getStackInSlot(0);
+        ItemStack existing = furnace.getStackInSlot(2);
+        if (input == null || existing == null) return true;
+        ItemStack produced = result(FurnaceRecipes.smelting(), input);
+        if (produced == null) return true; // Vanilla will reject invalid recipes.
+        return ItemStack.areItemStackTagsEqual(existing, produced);
+    }
+
     public static ItemStack result(FurnaceRecipes recipes, ItemStack input) {
         ItemStack template = recipes.getSmeltingResult(input);
         if (template == null) return null;
