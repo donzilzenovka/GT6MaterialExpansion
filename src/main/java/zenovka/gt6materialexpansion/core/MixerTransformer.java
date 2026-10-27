@@ -24,7 +24,8 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
                 boolean readable = ("findMatchingRecipe".equals(method.name)
                         || "func_82787_a".equals(method.name))
                         && "(Lnet/minecraft/inventory/InventoryCrafting;Lnet/minecraft/world/World;)Lnet/minecraft/item/ItemStack;".equals(method.desc);
-                if (!readable) continue;
+                boolean notch = "a".equals(method.name) && "(Laae;Lahb;)Ladd;".equals(method.desc);
+                if (!readable && !notch) continue;
                 // Result is on stack at each ARETURN; matrix is local 1.
                 for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
                     if (insn.getOpcode() != ARETURN) continue;
@@ -32,7 +33,8 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
                     hook.add(new VarInsnNode(ALOAD, 1));
                     hook.add(new MethodInsnNode(INVOKESTATIC,
                             "zenovka/gt6materialexpansion/FoodMaterials", "preview",
-                            "(Lnet/minecraft/item/ItemStack;Lnet/minecraft/inventory/IInventory;)Lnet/minecraft/item/ItemStack;", false));
+                            notch ? "(Ladd;Laae;)Ladd;"
+                                    : "(Lnet/minecraft/item/ItemStack;Lnet/minecraft/inventory/IInventory;)Lnet/minecraft/item/ItemStack;", false));
                     method.instructions.insertBefore(insn, hook);
                     matches++;
                 }
