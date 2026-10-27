@@ -8,10 +8,61 @@ import org.objectweb.asm.tree.*;
 
 public final class MixerTransformer implements IClassTransformer, Opcodes {
     private static final String TARGET = "gregapi.tileentity.machines.MultiTileEntityBasicMachine";
+    private static final String BOWL = "gregtech.tileentity.tools.MultiTileEntityMixingBowl";
     private static final String OWNER = "gregapi/tileentity/machines/MultiTileEntityBasicMachine";
     private static final String BRIDGE = "zenovka/gt6materialexpansion/core/MixerInheritanceBridge";
+
+    private byte[] transformBowl(byte[] bytes) {
+        try {
+            ClassNode node = new ClassNode();
+            new ClassReader(bytes).accept(node, 0);
+            int patched = 0;
+            for (MethodNode method : node.methods) {
+                int inputLocal = -1;
+                for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
+                    if (!(insn instanceof MethodInsnNode)) continue;
+                    MethodInsnNode call = (MethodInsnNode) insn;
+                    if (!"gregapi/recipes/Recipe".equals(call.owner) || !"isRecipeInputEqual".equals(call.name)) continue;
+                    // The actual ItemStack[] is the final argument on the operand stack.
+                    // DUP preserves it for GT6 while passing a copy to our snapshot helper.
+                    InsnList capture = new InsnList();
+                    capture.add(new InsnNode(DUP));
+                    capture.add(new MethodInsnNode(INVOKESTATIC, BRIDGE, "snapshotInputs", "([Lnet/minecraft/item/ItemStack;)V", false));
+                    method.instructions.insertBefore(insn, capture);
+                    patched++;
+                }
+                for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
+                    if (!(insn instanceof MethodInsnNode)) continue;
+                    MethodInsnNode call = (MethodInsnNode) insn;
+                    if ("gregapi/recipes/Recipe".equals(call.owner) && "getOutputs".equals(call.name)
+                            && "()[Lnet/minecraft/item/ItemStack;".equals(call.desc)) {
+                        call.setOpcode(INVOKESTATIC);
+                        call.owner = BRIDGE;
+                        call.name = "bowlOutputs";
+                        call.desc = "(Lgregapi/recipes/Recipe;)[Lnet/minecraft/item/ItemStack;";
+                        call.itf = false;
+                        patched++;
+                    }
+                }
+            }
+            if (patched != 4) {
+                System.err.println("[GT6MaterialExpansion] Mixing bowl signature mismatch (" + patched + "); no patch applied.");
+                return bytes;
+            }
+            ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            node.accept(writer);
+            System.out.println("[GT6MaterialExpansion] Installed manual mixing bowl inheritance hook.");
+            return writer.toByteArray();
+        } catch (Throwable error) {
+            System.err.println("[GT6MaterialExpansion] Manual bowl ASM failed; leaving GT6 unchanged.");
+            error.printStackTrace();
+            return bytes;
+        }
+    }
     @Override public byte[] transform(String name, String transformedName, byte[] bytes) {
-        if (bytes == null || !TARGET.equals(transformedName)) return bytes;
+        if (bytes == null) return bytes;
+        if (BOWL.equals(transformedName)) return transformBowl(bytes);
+        if (!TARGET.equals(transformedName)) return bytes;
         try {
             ClassNode node = new ClassNode();
             new ClassReader(bytes).accept(node, 0);
