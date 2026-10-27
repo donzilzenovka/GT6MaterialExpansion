@@ -18,6 +18,14 @@ public final class MixerInheritanceBridge {
     private static final ThreadLocal<ItemStack> INPUT = new ThreadLocal<ItemStack>();
     private static int diagnostics = 0;
     private static final int DIAGNOSTIC_LIMIT = 160;
+    private static final org.apache.logging.log4j.Logger LOGGER =
+            org.apache.logging.log4j.LogManager.getLogger("GT6MaterialExpansion");
+    private static final java.util.Set<String> WARNED_LEGACY =
+            java.util.Collections.synchronizedSet(new java.util.HashSet<String>());
+    private static void warnDeprecated(String process) {
+        if (WARNED_LEGACY.add(process))
+            LOGGER.warn("[GT6MaterialExpansion/DEPRECATED_LOGIC] Using deprecated logic: {}. Retained for compatibility; review if material inheritance is incorrect.", process);
+    }
     private MixerInheritanceBridge() {}
     private static void diagnostic(String message) {
         if (diagnostics++ < DIAGNOSTIC_LIMIT) System.out.println("[GT6MaterialExpansion/Mixer] " + message);
@@ -28,6 +36,7 @@ public final class MixerInheritanceBridge {
     /** @deprecated Legacy first-slot snapshot. Remove after consumption-based inheritance is validated. */
     @Deprecated
     public static void snapshotInputs(ItemStack[] inputs) {
+        warnDeprecated("MixerInheritanceBridge.snapshotInputs");
         ItemStack primary = null;
         if (inputs != null) for (ItemStack item : inputs) {
             if (item != null && item.stackSize > 0) { primary = item; break; }
@@ -53,6 +62,7 @@ public final class MixerInheritanceBridge {
     /** @deprecated Legacy first-input snapshot, retained for the mixing bowl hook. */
     @Deprecated
     public static void snapshot(ItemStack input) {
+        warnDeprecated("MixerInheritanceBridge.snapshot");
         INPUT.set(input == null ? null : input.copy());
     }
 
@@ -171,6 +181,7 @@ public final class MixerInheritanceBridge {
     /** @deprecated First-primary-only material inheritance; retained temporarily for bowl and fallback. */
     @Deprecated
     private static void inherit(Recipe recipe, ItemStack primary, ItemStack output) {
+        warnDeprecated("MixerInheritanceBridge.inherit (first-primary)");
         if (output == null || output.stackSize <= 0) { diagnostic("Empty primary output"); return; }
         NBTTagCompound existing = output.getTagCompound();
         if (existing != null && existing.hasKey(ORIGINAL)) return;
