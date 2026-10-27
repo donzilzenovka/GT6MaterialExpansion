@@ -7,10 +7,47 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
 public final class MixerTransformer implements IClassTransformer, Opcodes {
+    private static final String FURNACE = "net.minecraft.tileentity.TileEntityFurnace";
+    private static final String FURNACE_BRIDGE = "zenovka/gt6materialexpansion/core/FurnaceInheritanceBridge";
     private static final String TARGET = "gregapi.tileentity.machines.MultiTileEntityBasicMachine";
     private static final String BOWL = "gregtech.tileentity.tools.MultiTileEntityMixingBowl";
     private static final String OWNER = "gregapi/tileentity/machines/MultiTileEntityBasicMachine";
     private static final String BRIDGE = "zenovka/gt6materialexpansion/core/MixerInheritanceBridge";
+
+    private byte[] transformFurnace(byte[] bytes) {
+        try {
+            ClassNode node = new ClassNode();
+            new ClassReader(bytes).accept(node, 0);
+            int patched = 0;
+            for (MethodNode method : node.methods) {
+                for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
+                    if (!(insn instanceof MethodInsnNode)) continue;
+                    MethodInsnNode call = (MethodInsnNode) insn;
+                    if (!"net/minecraft/item/crafting/FurnaceRecipes".equals(call.owner)
+                            || !"(Lnet/minecraft/item/ItemStack;)Lnet/minecraft/item/ItemStack;".equals(call.desc)
+                            || insn.getOpcode() != INVOKEVIRTUAL) continue;
+                    call.setOpcode(INVOKESTATIC);
+                    call.owner = FURNACE_BRIDGE;
+                    call.name = "result";
+                    call.desc = "(Lnet/minecraft/item/crafting/FurnaceRecipes;Lnet/minecraft/item/ItemStack;)Lnet/minecraft/item/ItemStack;";
+                    call.itf = false;
+                    patched++;
+                }
+            }
+            if (patched < 1) {
+                System.err.println("[GT6MaterialExpansion] Vanilla furnace recipe lookup signature not found.");
+                return bytes;
+            }
+            ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            node.accept(writer);
+            System.out.println("[GT6MaterialExpansion] Installed vanilla furnace inheritance hook (" + patched + " lookups).");
+            return writer.toByteArray();
+        } catch (Throwable error) {
+            System.err.println("[GT6MaterialExpansion] Vanilla furnace ASM failed; leaving furnace unchanged.");
+            error.printStackTrace();
+            return bytes;
+        }
+    }
 
     private byte[] transformBowl(byte[] bytes) {
         try {
@@ -61,6 +98,7 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
     }
     @Override public byte[] transform(String name, String transformedName, byte[] bytes) {
         if (bytes == null) return bytes;
+        if (FURNACE.equals(transformedName)) return transformFurnace(bytes);
         if (BOWL.equals(transformedName)) return transformBowl(bytes);
         if (!TARGET.equals(transformedName)) return bytes;
         try {
