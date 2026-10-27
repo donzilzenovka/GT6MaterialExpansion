@@ -162,8 +162,12 @@ public final class ToolMaterials {
             // Keep each ingredient separate: a returned container must never
             // subtract material supplied by a different recipe ingredient.
             Map<OreDictMaterial, Long> consumed = new LinkedHashMap<OreDictMaterial, Long>();
-            if (!accumulate(consumed, data, 1)) return null;
+            if (!accumulate(consumed, data, 1)) {
+                if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Invalid ingredient material entry in slot %d", slot);
+                return null;
+            }
 
+            if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Slot %d container flag=%s", slot, single.getItem().hasContainerItem(single));
             if (single.getItem().hasContainerItem(single)) {
                 ItemStack returned = single.getItem().getContainerItem(single);
                 if (returned != null) {
@@ -194,6 +198,7 @@ public final class ToolMaterials {
                     }
                 }
             }
+            if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Slot %d resolved, components=%d", slot, consumed.size());
             for (Map.Entry<OreDictMaterial, Long> part : consumed.entrySet()) {
                 Long previous = totals.get(part.getKey());
                 long before = previous == null ? 0 : previous;
@@ -203,10 +208,14 @@ public final class ToolMaterials {
             }
         }
         if (!found || outputCount <= 0) return null;
+        if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Grid complete; aggregate components=%d", totals.size());
         List<OreDictMaterialStack> result = new ArrayList<OreDictMaterialStack>();
         for (Map.Entry<OreDictMaterial, Long> entry : totals.entrySet()) {
             long amount = entry.getValue();
-            if (amount < 0 || amount % outputCount != 0) return null;
+            if (amount < 0 || amount % outputCount != 0) {
+                if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Invalid final amount for %s: %d, output count=%d", entry.getKey(), amount, outputCount);
+                return null;
+            }
             if (amount > 0) result.add(OM.stack(entry.getKey(), amount / outputCount));
         }
         return result;
