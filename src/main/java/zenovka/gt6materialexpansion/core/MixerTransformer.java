@@ -23,15 +23,18 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
                 for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
                     if (!(insn instanceof MethodInsnNode)) continue;
                     MethodInsnNode call = (MethodInsnNode) insn;
-                    // Runtime MCP/SRG names differ; the owner and descriptor identify
-                    // the furnace recipe lookup without relying on its method name.
-                    if (!"net/minecraft/item/crafting/FurnaceRecipes".equals(call.owner)
-                            || !"(Lnet/minecraft/item/ItemStack;)Lnet/minecraft/item/ItemStack;".equals(call.desc)
-                            || insn.getOpcode() != INVOKEVIRTUAL) continue;
+                    // LaunchWrapper may deliver either MCP/SRG or notch-obfuscated bytecode.
+                    // Match the observed 1.7.10 notch call as well as the readable form.
+                    boolean notch = "afa".equals(call.owner) && "a".equals(call.name)
+                            && "(Ladd;)Ladd;".equals(call.desc);
+                    boolean readable = "net/minecraft/item/crafting/FurnaceRecipes".equals(call.owner)
+                            && "(Lnet/minecraft/item/ItemStack;)Lnet/minecraft/item/ItemStack;".equals(call.desc);
+                    if (insn.getOpcode() != INVOKEVIRTUAL || (!notch && !readable)) continue;
                     call.setOpcode(INVOKESTATIC);
                     call.owner = FURNACE_BRIDGE;
                     call.name = "result";
-                    call.desc = "(Lnet/minecraft/item/crafting/FurnaceRecipes;Lnet/minecraft/item/ItemStack;)Lnet/minecraft/item/ItemStack;";
+                    call.desc = notch ? "(Lafa;Ladd;)Ladd;"
+                            : "(Lnet/minecraft/item/crafting/FurnaceRecipes;Lnet/minecraft/item/ItemStack;)Lnet/minecraft/item/ItemStack;";
                     call.itf = false;
                     patched++;
                 }
