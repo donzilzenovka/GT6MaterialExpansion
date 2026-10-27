@@ -37,22 +37,18 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
                 }
             }
             if (patched < 1) {
-                // Dump all method signatures and recipe-shaped calls. In a production
-                // runtime, method names may be neither MCP nor SRG.
-                int shownMethods = 0;
-                int shownCalls = 0;
+                // The incoming class is still in notch-obfuscated form.
+                // Print every invocation in its two smelting routines, including
+                // obfuscated owners/descriptors that contain no readable names.
                 for (MethodNode method : node.methods) {
-                    if (shownMethods++ < 60)
-                        System.err.println("[GT6MaterialExpansion/Furnace] METHOD " + method.name + method.desc);
+                    if (!("k".equals(method.name) && "()Z".equals(method.desc))
+                            && !("j".equals(method.name) && "()V".equals(method.desc))) continue;
+                    System.err.println("[GT6MaterialExpansion/Furnace] METHOD " + method.name + method.desc);
                     for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
                         if (!(insn instanceof MethodInsnNode)) continue;
                         MethodInsnNode call = (MethodInsnNode) insn;
-                        if (call.desc.contains("Lnet/minecraft/item/ItemStack;")
-                                || call.owner.contains("Furnace") || call.owner.contains("furnace")) {
-                            if (shownCalls++ < 80)
-                                System.err.println("[GT6MaterialExpansion/Furnace] CALL in " + method.name
-                                        + ": " + call.owner + "." + call.name + call.desc + " opcode=" + call.getOpcode());
-                        }
+                        System.err.println("[GT6MaterialExpansion/Furnace] CALL " + call.owner + "." + call.name
+                                + call.desc + " opcode=" + call.getOpcode());
                     }
                 }
             }
