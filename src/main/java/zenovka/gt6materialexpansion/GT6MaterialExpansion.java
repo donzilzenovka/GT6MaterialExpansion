@@ -20,6 +20,7 @@ import gregapi.oredict.OreDictManager;
 import gregapi.oredict.configurations.OreDictConfigurationComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.init.Items;
 import cpw.mods.fml.common.FMLLog;
 import net.minecraftforge.common.config.Configuration;
 
@@ -239,8 +240,8 @@ public final class GT6MaterialExpansion {
         FoodMaterials.register(AppleFruit, Carrot, Egg); // Per-stack composition of crafted foods; no global overrides.
         // Bottled food fluids and ice cream lack item-material data in GT6.
         // Existing assignments take precedence; no recipe ingredient (including salt) is inferred.
-        assignIfMissing("gregtech:gt.multiitem.bottles", 1101, HeavyCream, U);
-        assignIfMissing("gregtech:gt.multiitem.bottles", 5604, CoconutCream, U);
+        assignBottledFluidIfMissing("gregtech:gt.multiitem.bottles", 1101, HeavyCream, U);
+        assignBottledFluidIfMissing("gregtech:gt.multiitem.bottles", 5604, CoconutCream, U);
         assignIfMissing("gregtech:gt.multiitem.food", 13000, HeavyCream, U);
         ToolMaterials.register(); // Experimental GT6 shovel-only composition probe.\n        // Additional item associations will follow after pack-specific verification.
         overrideMeatItem("minecraft:chicken", 0, ChickenRaw);
@@ -455,4 +456,30 @@ public final class GT6MaterialExpansion {
             OreDictManager.INSTANCE.addItemData(stack, new OreDictItemData(material, amount));
         }
     }
+    /**
+     * A filled fluid bottle represents its contents AND its returned glass.
+     * Copy GT6's actual empty-bottle material quantity rather than guessing
+     * an amount of Glass. Do not override existing GT6 item assignments.
+     */
+    private static void assignBottledFluidIfMissing(String registryName, int metadata,
+                                                    OreDictMaterial fluidMaterial, long fluidAmount) {
+        Object registered = Item.itemRegistry.getObject(registryName);
+        if (!(registered instanceof Item) || fluidMaterial == null) return;
+        ItemStack filled = new ItemStack((Item) registered, 1, metadata);
+        if (OreDictManager.INSTANCE.getItemData(filled) != null) return;
+
+        OreDictItemData emptyData = OM.anydata(new ItemStack(Items.glass_bottle, 1, 0));
+        if (emptyData == null || emptyData.getAllMaterialStacks().isEmpty()) {
+            FMLLog.warning("[GT6MaterialExpansion] No material data for empty glass bottle; %s:%d unchanged",
+                registryName, metadata);
+            return;
+        }
+        java.util.List<OreDictMaterialStack> bottle = emptyData.getAllMaterialStacks();
+        OreDictItemData combined = new OreDictItemData(OM.stack(fluidMaterial, fluidAmount),
+            bottle.toArray(new OreDictMaterialStack[bottle.size()]));
+        OreDictManager.INSTANCE.addItemData(filled, combined);
+        FMLLog.info("[GT6MaterialExpansion] Bottled fluid %s:%d includes %d empty-bottle material components",
+            registryName, metadata, bottle.size());
+    }
+
 }
