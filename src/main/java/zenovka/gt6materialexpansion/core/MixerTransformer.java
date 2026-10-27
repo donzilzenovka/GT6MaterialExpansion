@@ -33,7 +33,7 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
                     hook.add(new VarInsnNode(ALOAD, 1));
                     hook.add(new MethodInsnNode(INVOKESTATIC,
                             "zenovka/gt6materialexpansion/FoodMaterials", "preview",
-                            notch ? "(Ladd;Laae;)Ladd;"
+                            notch ? "(Ladd;Lavr;)Ladd;"
                                     : "(Lnet/minecraft/item/ItemStack;Lnet/minecraft/inventory/IInventory;)Lnet/minecraft/item/ItemStack;", false));
                     method.instructions.insertBefore(insn, hook);
                     matches++;
