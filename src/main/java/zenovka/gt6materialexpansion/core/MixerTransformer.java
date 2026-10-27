@@ -55,6 +55,7 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
                         }
                     }
                 }
+            }
             if (patched < 1) {
                 System.err.println("[GT6MaterialExpansion] Vanilla furnace recipe lookup signature not found.");
                 return bytes;
