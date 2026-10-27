@@ -23,6 +23,8 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
                 for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
                     if (!(insn instanceof MethodInsnNode)) continue;
                     MethodInsnNode call = (MethodInsnNode) insn;
+                    // Runtime MCP/SRG names differ; the owner and descriptor identify
+                    // the furnace recipe lookup without relying on its method name.
                     if (!"net/minecraft/item/crafting/FurnaceRecipes".equals(call.owner)
                             || !"(Lnet/minecraft/item/ItemStack;)Lnet/minecraft/item/ItemStack;".equals(call.desc)
                             || insn.getOpcode() != INVOKEVIRTUAL) continue;
