@@ -15,6 +15,8 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Item;
+import cpw.mods.fml.common.FMLLog;
 import net.minecraft.nbt.NBTTagCompound;
 
 import java.util.ArrayList;
@@ -45,20 +47,32 @@ public final class ToolMaterials {
     public void onCrafted(PlayerEvent.ItemCraftedEvent event) {
         ItemStack result = event.crafting;
         if (result == null || event.craftMatrix == null) return;
+        boolean debugCake = "minecraft:cake".equals(Item.itemRegistry.getNameForObject(result.getItem()));
+        if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Cake crafted; checking inheritance");
         NBTTagCompound existing = result.getTagCompound();
         // A previously established stack-specific composition always wins.
-        if (existing != null && (existing.hasKey(RECYCLING_TAG) || existing.hasKey(ORIGINAL_TAG))) return;
+        if (existing != null && (existing.hasKey(RECYCLING_TAG) || existing.hasKey(ORIGINAL_TAG))) {
+            if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Cake skipped: existing stack composition tag");
+            return;
+        }
 
         boolean tool = result.getItem() instanceof MultiItemTool;
         // For ordinary items, respect GT6's existing material association (e.g. sticks).
         // Tools retain their established recipe-derived original-material behaviour.
         if (!tool) {
             OreDictItemData outputData = OM.anydata(result);
-            if (outputData != null && !outputData.getAllMaterialStacks().isEmpty()) return;
+            if (outputData != null && !outputData.getAllMaterialStacks().isEmpty()) {
+                if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Cake skipped: output already has GT6 material data");
+                return;
+            }
         }
 
-        List<OreDictMaterialStack> components = resolveIngredients(event.craftMatrix, result.stackSize);
-        if (components == null || components.isEmpty()) return;
+        List<OreDictMaterialStack> components = resolveIngredients(event.craftMatrix, result.stackSize, debugCake);
+        if (components == null || components.isEmpty()) {
+            if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Cake skipped: ingredient resolution failed");
+            return;
+        }
+        if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Cake inherited %d material components", components.size());
 
         NBTTagCompound tag = existing == null ? new NBTTagCompound() : existing;
         if (tool) {
@@ -129,7 +143,7 @@ public final class ToolMaterials {
      * Fail closed if an ingredient is unknown or its returned container cannot
      * be resolved, so we never silently claim an incomplete composition.
      */
-    private static List<OreDictMaterialStack> resolveIngredients(IInventory grid, int outputCount) {
+    private static List<OreDictMaterialStack> resolveIngredients(IInventory grid, int outputCount, boolean debugCake) {
         Map<OreDictMaterial, Long> totals = new LinkedHashMap<OreDictMaterial, Long>();
         boolean found = false;
         for (int slot = 0; slot < grid.getSizeInventory(); slot++) {
@@ -140,13 +154,18 @@ public final class ToolMaterials {
             single.stackSize = 1;
 
             OreDictItemData data = OM.anydata(single);
-            if (data == null || data.getAllMaterialStacks().isEmpty()) return null;
+            if (data == null || data.getAllMaterialStacks().isEmpty()) {
+                if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Input slot %d has no readable materials: %s", slot, single.getDisplayName());
+                return null;
+            }
+            if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Input slot %d: %s, components=%d", slot, single.getDisplayName(), data.getAllMaterialStacks().size());
             if (!accumulate(totals, data, 1)) return null;
 
             if (single.getItem().hasContainerItem(single)) {
                 ItemStack returned = single.getItem().getContainerItem(single);
                 if (returned != null) {
                     OreDictItemData returnedData = OM.anydata(returned);
+                    if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Returned container: %s, material data=%s", returned.getDisplayName(), returnedData == null ? "missing" : "present");
                     if (returnedData == null || !accumulate(totals, returnedData, -1)) return null;
                 }
             }
