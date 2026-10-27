@@ -22,7 +22,7 @@ public final class MixerInheritanceBridge {
         if (diagnostics++ < 20) System.out.println("[GT6MaterialExpansion/Mixer] " + message);
     }
 
-    public static void clear() { INPUT.remove(); }
+    public static void clear() { INPUT.remove(); CONSUMED.remove(); }
 
     public static void snapshotInputs(ItemStack[] inputs) {
         ItemStack primary = null;
@@ -45,6 +45,92 @@ public final class MixerInheritanceBridge {
         INPUT.set(input == null ? null : input.copy());
     }
 
+    // Committed item consumption, recorded using GT6's own matching and deduction.
+    private static final ThreadLocal<java.util.Map<gregapi.oredict.OreDictMaterial, Long>> CONSUMED =
+            new ThreadLocal<java.util.Map<gregapi.oredict.OreDictMaterial, Long>>();
+
+    public static boolean consume(Recipe recipe, boolean decrease, boolean dontCheck,
+                                  net.minecraftforge.fluids.IFluidTank[] tanks, ItemStack[] inputs) {
+        ItemStack[] before = copies(inputs);
+        boolean success = recipe.isRecipeInputEqual(decrease, dontCheck, tanks, inputs);
+        if (success && decrease) record(before, inputs);
+        return success;
+    }
+
+    public static int consumeParallel(Recipe recipe, int max,
+                                      net.minecraftforge.fluids.IFluidTank[] tanks, ItemStack[] inputs) {
+        ItemStack[] before = copies(inputs);
+        int completed = recipe.isRecipeInputEqual(max, tanks, inputs);
+        if (completed > 0) record(before, inputs);
+        return completed;
+    }
+
+    private static ItemStack[] copies(ItemStack[] inputs) {
+        if (inputs == null) return null;
+        ItemStack[] result = new ItemStack[inputs.length];
+        for (int i = 0; i < inputs.length; i++)
+            if (inputs[i] != null) result[i] = inputs[i].copy();
+        return result;
+    }
+
+    private static void record(ItemStack[] before, ItemStack[] after) {
+        if (before == null || after == null) return;
+        java.util.Map<gregapi.oredict.OreDictMaterial, Long> totals = CONSUMED.get();
+        if (totals == null) {
+            totals = new java.util.HashMap<gregapi.oredict.OreDictMaterial, Long>();
+            CONSUMED.set(totals);
+        }
+        for (int i = 0; i < before.length && i < after.length; i++) {
+            ItemStack old = before[i];
+            if (old == null) continue;
+            int remaining = after[i] == null ? 0 : after[i].stackSize;
+            long used = (long) old.stackSize - remaining;
+            if (used <= 0) continue;
+            OreDictItemData data = OM.anydata(old);
+            if (data == null || data.getAllMaterialStacks() == null) {
+                CONSUMED.remove();
+                return;
+            }
+            for (OreDictMaterialStack part : data.getAllMaterialStacks()) {
+                if (part == null || part.mMaterial == null || part.mAmount < 0
+                        || (used != 0 && part.mAmount > Long.MAX_VALUE / used)) {
+                    CONSUMED.remove();
+                    return;
+                }
+                long delta = used * part.mAmount;
+                Long previous = totals.get(part.mMaterial);
+                long base = previous == null ? 0 : previous;
+                if (delta > Long.MAX_VALUE - base) { CONSUMED.remove(); return; }
+                totals.put(part.mMaterial, base + delta);
+            }
+        }
+    }
+
+    private static void inheritConsumed(ItemStack output) {
+        java.util.Map<gregapi.oredict.OreDictMaterial, Long> totals = CONSUMED.get();
+        if (output == null || output.stackSize <= 0 || totals == null || totals.isEmpty()) return;
+        NBTTagCompound existing = output.getTagCompound();
+        if (existing != null && existing.hasKey(ORIGINAL)) return;
+        java.util.List<gregapi.oredict.OreDictMaterial> keys =
+                new java.util.ArrayList<gregapi.oredict.OreDictMaterial>(totals.keySet());
+        java.util.Collections.sort(keys, new java.util.Comparator<gregapi.oredict.OreDictMaterial>() {
+            @Override public int compare(gregapi.oredict.OreDictMaterial a, gregapi.oredict.OreDictMaterial b) {
+                return Integer.compare(a.mID, b.mID);
+            }
+        });
+        List<OreDictMaterialStack> parts = new ArrayList<OreDictMaterialStack>();
+        for (gregapi.oredict.OreDictMaterial material : keys) {
+            long amount = totals.get(material);
+            if (amount % output.stackSize != 0) return;
+            if (amount > 0) parts.add(OM.stack(material, amount / output.stackSize));
+        }
+        if (parts.isEmpty()) return;
+        NBTTagCompound tag = existing == null ? new NBTTagCompound() : existing;
+        OreDictMaterialStack.saveList(ORIGINAL, tag, parts);
+        OreDictMaterialStack.saveList(RECYCLING, tag, parts);
+        output.setTagCompound(tag);
+    }
+
     public static void apply(MultiTileEntityBasicMachine machine) {
         ItemStack primary = INPUT.get();
         INPUT.remove();
@@ -52,13 +138,15 @@ public final class MixerInheritanceBridge {
             if (primary != null) diagnostic("Recipe map differs from RM.Mixer: " + machine.mRecipes);
             return;
         }
-        if (primary == null || machine.mCurrentRecipe == null
+        if ((primary == null && (CONSUMED.get() == null || CONSUMED.get().isEmpty())) || machine.mCurrentRecipe == null
                 || machine.mOutputItems == null || machine.mOutputItems.length == 0) {
             diagnostic("No primary snapshot, recipe, or output; primary=" + primary);
             return;
         }
         ItemStack output = machine.mOutputItems[0];
-        inherit(machine.mCurrentRecipe, primary, output);
+        if (CONSUMED.get() != null && !CONSUMED.get().isEmpty()) inheritConsumed(output);
+        else inherit(machine.mCurrentRecipe, primary, output);
+        CONSUMED.remove();
     }
 
     private static void inherit(Recipe recipe, ItemStack primary, ItemStack output) {
