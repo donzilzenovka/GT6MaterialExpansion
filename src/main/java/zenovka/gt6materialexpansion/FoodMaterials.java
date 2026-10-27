@@ -51,6 +51,7 @@ public final class FoodMaterials {
     public void onCrafted(PlayerEvent.ItemCraftedEvent event) {
         ItemStack output = event.crafting;
         if (output == null || event.craftMatrix == null) return;
+        if (!(output.getItem() instanceof net.minecraft.item.ItemFood) && !isDoughOutput(output)) return;
         NBTTagCompound existing = output.getTagCompound();
         if (existing != null && existing.hasKey(ORIGINAL_TAG)) return;
 
@@ -113,6 +114,15 @@ public final class FoodMaterials {
         for (int i = 0; i < parts.size(); i++)
             if (amounts[i] > 0) scaled.add(OM.stack(parts.get(i).mMaterial, amounts[i]));
         return scaled;
+    }
+
+    private static boolean isDoughOutput(ItemStack output) {
+        int[] ids = net.minecraftforge.oredict.OreDictionary.getOreIDs(output);
+        for (int id : ids) {
+            String name = net.minecraftforge.oredict.OreDictionary.getOreName(id);
+            if (name != null && name.toLowerCase(java.util.Locale.ROOT).contains("dough")) return true;
+        }
+        return false;
     }
 
     private static List<OreDictMaterialStack> derive(IInventory matrix, int count) {
