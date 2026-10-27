@@ -273,18 +273,26 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
                     System.err.println("[GT6MaterialExpansion] Mixer ASM signature mismatch; inheritance disabled.");
                     return bytes;
                 }
-                // Snapshot before GT6 mutates the input stack. Do this at each successful-consumption candidate.
+                // Wrap GT6's own committed consumption calls; compare item counts
+                // before/after instead of guessing which input slots belong to the recipe.
                 for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
                     if (!(insn instanceof MethodInsnNode)) continue;
                     MethodInsnNode call = (MethodInsnNode) insn;
-                    if (!"gregapi/recipes/Recipe".equals(call.owner) || !"isRecipeInputEqual".equals(call.name)
-                            || !call.desc.startsWith("(ZZ")) continue;
-                    InsnList capture = new InsnList();
-                    // Recipe's final argument is the actual item input array.
-                    // Capture it before isRecipeInputEqual consumes the ingredients.
-                    capture.add(new InsnNode(DUP));
-                    capture.add(new MethodInsnNode(INVOKESTATIC, BRIDGE, "snapshotInputs", "([Lnet/minecraft/item/ItemStack;)V", false));
-                    method.instructions.insertBefore(insn, capture);
+                    if (!"gregapi/recipes/Recipe".equals(call.owner)
+                            || !"isRecipeInputEqual".equals(call.name)) continue;
+                    if ("(ZZ[Lnet/minecraftforge/fluids/IFluidTank;[Lnet/minecraft/item/ItemStack;)Z".equals(call.desc)) {
+                        call.setOpcode(INVOKESTATIC);
+                        call.owner = BRIDGE;
+                        call.name = "consume";
+                        call.desc = "(Lgregapi/recipes/Recipe;ZZ[Lnet/minecraftforge/fluids/IFluidTank;[Lnet/minecraft/item/ItemStack;)Z";
+                        call.itf = false;
+                    } else if ("(I[Lnet/minecraftforge/fluids/IFluidTank;[Lnet/minecraft/item/ItemStack;)I".equals(call.desc)) {
+                        call.setOpcode(INVOKESTATIC);
+                        call.owner = BRIDGE;
+                        call.name = "consumeParallel";
+                        call.desc = "(Lgregapi/recipes/Recipe;I[Lnet/minecraftforge/fluids/IFluidTank;[Lnet/minecraft/item/ItemStack;)I";
+                        call.itf = false;
+                    }
                 }
                 InsnList apply = new InsnList();
                 apply.add(new VarInsnNode(ALOAD, 0));
