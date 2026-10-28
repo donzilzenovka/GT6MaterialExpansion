@@ -23,6 +23,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.init.Items;
 import cpw.mods.fml.common.FMLLog;
 import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.common.MinecraftForge;
 
 /**
  * Initial GT6 6.17.06 material-data experiment.
@@ -251,6 +252,7 @@ public final class GT6MaterialExpansion {
             FMLLog.info("[GT6MaterialExpansion] Fruit Remains 0.036 U override accepted=%s", changed);
         }
         FoodMaterials.register(AppleFruit, Carrot, Egg); // Per-stack composition of crafted foods; no global overrides.
+        MinecraftForge.EVENT_BUS.register(new MaterialAcquisitionHandler());
         // Bottled food fluids and ice cream lack item-material data in GT6.
         // Existing assignments take precedence; no recipe ingredient (including salt) is inferred.
         assignBottledFluidIfMissing("gregtech:gt.multiitem.bottles", 1101, HeavyCream, U);
