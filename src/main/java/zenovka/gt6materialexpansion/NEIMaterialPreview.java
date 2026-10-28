@@ -42,8 +42,7 @@ public final class NEIMaterialPreview extends NEI_RecipeMap {
         synchronized (handlers) {
             for (int i = 0; i < handlers.size(); i++) {
                 ICraftingHandler handler = handlers.get(i);
-                if (handler != null && handler instanceof NEI_RecipeMap
-                        && RM.Mixer.mNameNEI.equals(handler.getHandlerId())) {
+                if (handler != null && RM.Mixer.mNameNEI.equals(handler.getHandlerId())) {
                     handlers.set(i, replacement);
                     count++;
                 }
