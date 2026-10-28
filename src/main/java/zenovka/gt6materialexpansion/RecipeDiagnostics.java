@@ -100,7 +100,13 @@ public final class RecipeDiagnostics {
 
     private static String craftingInputs(IRecipe recipe) {
         if (recipe instanceof ShapedRecipes) return items(((ShapedRecipes) recipe).recipeItems);
-        if (recipe instanceof ShapelessRecipes) return items(((ShapelessRecipes) recipe).recipeItems.toArray(new ItemStack[0]));
+        if (recipe instanceof ShapelessRecipes) {
+            StringBuilder result = new StringBuilder("[");
+            for (Object ingredient : ((ShapelessRecipes) recipe).recipeItems) {
+                result.append(ingredient instanceof ItemStack ? item((ItemStack) ingredient) : String.valueOf(ingredient)).append("; ");
+            }
+            return result.append("]").toString();
+        }
         Object[] input = null;
         if (recipe instanceof ShapedOreRecipe) input = ((ShapedOreRecipe) recipe).getInput();
         if (recipe instanceof ShapelessOreRecipe) input = ((ShapelessOreRecipe) recipe).getInput().toArray();
