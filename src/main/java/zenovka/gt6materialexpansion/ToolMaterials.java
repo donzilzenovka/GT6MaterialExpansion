@@ -14,16 +14,19 @@ import cpw.mods.fml.common.gameevent.TickEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.Container;
+import net.minecraft.inventory.ContainerWorkbench;
+import net.minecraft.inventory.ContainerPlayer;
+import net.minecraft.inventory.Slot;
+import net.minecraft.inventory.SlotCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
- * Experimental recipe-derived GT6 tool composition.
+ * Recipe-derived GT6 material composition for crafting outputs and tools.
  * Only newly crafted stacks are modified; no inventory scanning or global
  * item/metadata registrations. Missing input material data causes a safe skip.
  *
@@ -44,20 +47,76 @@ public final class ToolMaterials {
     @SubscribeEvent
     public void onCrafted(PlayerEvent.ItemCraftedEvent event) {
         ItemStack result = event.crafting;
-        if (result == null || !(result.getItem() instanceof MultiItemTool)) return;
-        if (event.craftMatrix == null) return;
+        if (result == null || event.craftMatrix == null) return;
         NBTTagCompound existing = result.getTagCompound();
-        if (existing != null && existing.hasKey(RECYCLING_TAG)) return;
+        // A previously established stack-specific composition always wins.
+        if (existing != null && (existing.hasKey(RECYCLING_TAG) || existing.hasKey(ORIGINAL_TAG))) {
+            return;
+        }
 
-        List<OreDictMaterialStack> components = resolveIngredients(event.craftMatrix, result.stackSize);
-        if (components == null || components.isEmpty()) return;
+        boolean tool = result.getItem() instanceof MultiItemTool;
+        // For ordinary items, respect GT6's existing material association (e.g. sticks).
+        // Tools retain their established recipe-derived original-material behaviour.
+        if (!tool) {
+            OreDictItemData outputData = OM.anydata(result);
+            if (outputData != null && !outputData.getAllMaterialStacks().isEmpty()) {
+                return;
+            }
+        }
+
+        List<OreDictMaterialStack> components = CraftingMaterialResolver.resolveIngredients(event.craftMatrix, result.stackSize);
+        if (components == null || components.isEmpty()) {
+            return;
+        }
 
         NBTTagCompound tag = existing == null ? new NBTTagCompound() : existing;
-        OreDictMaterialStack.saveList(ORIGINAL_TAG, tag, components);
-        result.setTagCompound(tag);
-        synchronize(result);
+        if (tool) {
+            OreDictMaterialStack.saveList(ORIGINAL_TAG, tag, components);
+            result.setTagCompound(tag);
+            synchronize(result);
+        } else {
+            OreDictMaterialStack.saveList(RECYCLING_TAG, tag, components);
+            result.setTagCompound(tag);
+        }
     }
 
+
+    /**
+     * Populate the live crafting result, without changing the recipe or GT6's
+     * existing material associations. The same resolver handles pickup.
+     * Both logical sides update their local preview; the server is authoritative.
+     */
+    @SubscribeEvent
+    public void onCraftPreview(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        Container container = event.player.openContainer;
+        if (container == null || container.inventorySlots.isEmpty()) return;
+        Object first = container.inventorySlots.get(0);
+        if (!(first instanceof SlotCrafting)) return;
+        IInventory grid;
+        if (container instanceof ContainerWorkbench) {
+            grid = ((ContainerWorkbench) container).craftMatrix;
+        } else if (container instanceof ContainerPlayer) {
+            grid = ((ContainerPlayer) container).craftMatrix;
+        } else {
+            return; // Do not guess at third-party container internals.
+        }
+        Slot outputSlot = (Slot) first;
+        ItemStack result = outputSlot.getStack();
+        if (result == null || result.getItem() == null) return;
+        if (result.getItem() instanceof MultiItemTool) return; // Existing tool path unchanged.
+        NBTTagCompound existing = result.getTagCompound();
+        if (existing != null && (existing.hasKey(RECYCLING_TAG) || existing.hasKey(ORIGINAL_TAG))) return;
+        OreDictItemData outputData = OM.anydata(result);
+        if (outputData != null && !outputData.getAllMaterialStacks().isEmpty()) return;
+
+        List<OreDictMaterialStack> components = CraftingMaterialResolver.resolveIngredients(grid, result.stackSize);
+        if (components == null || components.isEmpty()) return;
+        NBTTagCompound tag = existing == null ? new NBTTagCompound() : (NBTTagCompound) existing.copy();
+        OreDictMaterialStack.saveList(RECYCLING_TAG, tag, components);
+        result.setTagCompound(tag);
+        if (!event.player.worldObj.isRemote) container.detectAndSendChanges();
+    }
 
     /** Refresh player-held tools on the server; no global item registry or coremod. */
     @SubscribeEvent
@@ -111,53 +170,4 @@ public final class ToolMaterials {
         return true;
     }
 
-    /**
-     * Use the actual crafting inputs, not an arbitrary matching recipe from NEI.
-     * Fail closed if an ingredient is unknown or its returned container cannot
-     * be resolved, so we never silently claim an incomplete composition.
-     */
-    private static List<OreDictMaterialStack> resolveIngredients(IInventory grid, int outputCount) {
-        Map<OreDictMaterial, Long> totals = new LinkedHashMap<OreDictMaterial, Long>();
-        boolean found = false;
-        for (int slot = 0; slot < grid.getSizeInventory(); slot++) {
-            ItemStack ingredient = grid.getStackInSlot(slot);
-            if (ingredient == null || ingredient.getItem() == null) continue;
-            found = true;
-            ItemStack single = ingredient.copy();
-            single.stackSize = 1;
-
-            OreDictItemData data = OM.anydata(single);
-            if (data == null || data.getAllMaterialStacks().isEmpty()) return null;
-            if (!accumulate(totals, data, 1)) return null;
-
-            if (single.getItem().hasContainerItem(single)) {
-                ItemStack returned = single.getItem().getContainerItem(single);
-                if (returned != null) {
-                    OreDictItemData returnedData = OM.anydata(returned);
-                    if (returnedData == null || !accumulate(totals, returnedData, -1)) return null;
-                }
-            }
-        }
-        if (!found || outputCount <= 0) return null;
-        List<OreDictMaterialStack> result = new ArrayList<OreDictMaterialStack>();
-        for (Map.Entry<OreDictMaterial, Long> entry : totals.entrySet()) {
-            long amount = entry.getValue();
-            if (amount < 0 || amount % outputCount != 0) return null;
-            if (amount > 0) result.add(OM.stack(entry.getKey(), amount / outputCount));
-        }
-        return result;
-    }
-
-    private static boolean accumulate(Map<OreDictMaterial, Long> totals, OreDictItemData data, int sign) {
-        for (OreDictMaterialStack component : data.getAllMaterialStacks()) {
-            if (component == null || component.mMaterial == null || component.mAmount < 0) return false;
-            Long old = totals.get(component.mMaterial);
-            long previous = old == null ? 0 : old;
-            long delta = sign * component.mAmount;
-            long next = previous + delta;
-            if ((delta > 0 && next < previous) || (delta < 0 && next > previous)) return false;
-            totals.put(component.mMaterial, next);
-        }
-        return true;
-    }
 }

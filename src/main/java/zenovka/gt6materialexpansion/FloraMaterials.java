@@ -49,7 +49,19 @@ public final class FloraMaterials {
             assignBlock("minecraft:red_flower", meta, plantMatter, null);
         for (int meta = 0; meta < 3; meta++)
             assignBlock("minecraft:tallgrass", meta, plantMatter, null);
-        for (int meta = 0; meta < 6; meta++)
+        // Sunflower is double_plant metadata 0; annotate before generic flora.
+        // Retain its quarter-unit plant body and add 0.1 U sunflower oil.
+        Block sunflower = Block.getBlockFromName("minecraft:double_plant");
+        if (sunflower != null) {
+            ItemStack stack = new ItemStack(sunflower, 1, 0);
+            if (OreDictManager.INSTANCE.getItemData(stack) == null) {
+                OreDictManager.INSTANCE.addItemData(stack,
+                    new OreDictItemData(plantMatter, U / 4,
+                        new OreDictMaterialStack(MT.SunflowerOil, U / 10)));
+                seen.add("minecraft:double_plant:0");
+            }
+        }
+        for (int meta = 1; meta < 6; meta++)
             assignBlock("minecraft:double_plant", meta, plantMatter, null);
         assignBlock("minecraft:deadbush", 0, plantMatter, null);
         for (int meta = 0; meta < 4; meta++)

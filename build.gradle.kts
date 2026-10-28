@@ -29,3 +29,12 @@ dependencies {
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
 }
+
+tasks.jar {
+    manifest {
+        attributes(
+            "FMLCorePlugin" to "zenovka.gt6materialexpansion.core.MixerCorePlugin",
+            "FMLCorePluginContainsFMLMod" to "true"
+        )
+    }
+}

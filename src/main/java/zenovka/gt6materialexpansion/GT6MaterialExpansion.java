@@ -20,6 +20,7 @@ import gregapi.oredict.OreDictManager;
 import gregapi.oredict.configurations.OreDictConfigurationComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.init.Items;
 import cpw.mods.fml.common.FMLLog;
 import net.minecraftforge.common.config.Configuration;
 
@@ -37,7 +38,10 @@ public final class GT6MaterialExpansion {
     public static OreDictMaterial Loam;
     public static OreDictMaterial Soil;
     public static OreDictMaterial PlantMatter;
+    public static OreDictMaterial OrganicMatter;
     public static OreDictMaterial Mycelium;
+    public static OreDictMaterial AppleFruit, Carrot, Egg;
+    public static OreDictMaterial HeavyCream, CoconutCream;
     public static OreDictMaterial Keratin, Silk, Chitin, Cotton, Hemp, Flax, Fibre, Wool;
 	
     public static OreDictMaterial ChickenRaw;
@@ -57,14 +61,28 @@ public final class GT6MaterialExpansion {
         } finally {
             if (config.hasChanged()) config.save();
         }
+        ProduceMaterials.register();
         Loam = OreDictMaterial.createMaterial(32011, "Loam", "Loam");
         Soil = OreDictMaterial.createMaterial(32013, "Soil", "Soil");
         PlantMatter = OreDictMaterial.createMaterial(32026, "PlantMatter", "Plant Matter");
         PlantMatter.setDensity(0.45D);
         PlantMatter.setRGBa(90, 145, 55, 255);
+        OrganicMatter = OreDictMaterial.createMaterial(32036, "OrganicMatter", "Organic Matter");
+        // Hydrated, undifferentiated animal tissue; provisional bulk density.
+        OrganicMatter.setDensity(1.05D);
+        OrganicMatter.setRGBa(170, 125, 105, 255);
         Mycelium = OreDictMaterial.createMaterial(32027, "Mycelium", "Mycelium");
         // Provisional bulk density; revisit against GT6 mushroom processing.
         Mycelium.setDensity(0.25D);
+        AppleFruit = OreDictMaterial.createMaterial(32037, "AppleFruit", "Apple").setDensity(0.85D);
+        AppleFruit.setRGBa(190, 55, 45, 255);
+        Carrot = OreDictMaterial.createMaterial(32038, "Carrot", "Carrot").setDensity(0.95D);
+        Carrot.setRGBa(235, 125, 35, 255);
+        Egg = OreDictMaterial.createMaterial(32039, "Egg", "Egg").setDensity(1.03D);
+        // Composition-only counterparts to GT6 food fluids; do not alter MT.Cream (-1).
+        HeavyCream = OreDictMaterial.createMaterial(32040, "HeavyCream", "Heavy Cream").setDensity(0.99D);
+        CoconutCream = OreDictMaterial.createMaterial(32041, "CoconutCream", "Coconut Cream").setDensity(1.00D);
+        Egg.setRGBa(235, 220, 185, 255);
         // Composition-only biological materials; densities are provisional.
         Keratin = OreDictMaterial.createMaterial(32028, "Keratin", "Keratin").setDensity(1.30D);
         Silk = OreDictMaterial.createMaterial(32029, "Silk", "Silk").setDensity(1.30D);
@@ -213,12 +231,31 @@ public final class GT6MaterialExpansion {
         assignIfMissing("BiomesOPlenty:newBopDirt", 4, MT.STONES.Siltstone, 9 * U);
         assignIfMissing("BiomesOPlenty:newBopGrass", 0, Loam, 9 * U);
         assignIfMissing("BiomesOPlenty:mud", 0, Soil, 9 * U);
+        ProduceItemAssociations.register();
         FloraMaterials.register(PlantMatter);
         FungalMaterials.register(Mycelium);
+        MiscMaterials.register(Soil, PlantMatter, Mycelium, OrganicMatter, Fibre, Wool,
+            ProduceMaterials.get("Cactus"), ProduceMaterials.get("Reed"));
         BiologicalFibreMaterials.register(Keratin, Silk, Chitin, Cotton, Hemp, Flax, Fibre, Wool, stringIsCotton);
         // Vanilla torches are invariant, fuel-agnostic objects; no per-stack NBT.
         // Respect any composition another mod may have registered.
         assignIfMissing("minecraft:torch", 0, MT.Wood, U / 2);
+        // GT6 Fruit Remains (MultiItemFood metadata 12101): 0.036 U per item.
+        // Explicit override: the generic itemPlantRemains ore association may already
+        // have supplied 0.250 U, so an assign-if-missing check is insufficient.
+        Object fruitRemainsItem = Item.itemRegistry.getObject("gregtech:gt.multiitem.food");
+        if (fruitRemainsItem instanceof Item) {
+            ItemStack fruitRemains = new ItemStack((Item) fruitRemainsItem, 1, 12101);
+            boolean changed = OreDictManager.INSTANCE.setItemData(
+                fruitRemains, new OreDictItemData(PlantMatter, 36 * U / 1000));
+            FMLLog.info("[GT6MaterialExpansion] Fruit Remains 0.036 U override accepted=%s", changed);
+        }
+        FoodMaterials.register(AppleFruit, Carrot, Egg); // Per-stack composition of crafted foods; no global overrides.
+        // Bottled food fluids and ice cream lack item-material data in GT6.
+        // Existing assignments take precedence; no recipe ingredient (including salt) is inferred.
+        assignBottledFluidIfMissing("gregtech:gt.multiitem.bottles", 1101, HeavyCream, U);
+        assignBottledFluidIfMissing("gregtech:gt.multiitem.bottles", 5604, CoconutCream, U);
+        assignIfMissing("gregtech:gt.multiitem.food", 13000, HeavyCream, U);
         ToolMaterials.register(); // Experimental GT6 shovel-only composition probe.\n        // Additional item associations will follow after pack-specific verification.
         overrideMeatItem("minecraft:chicken", 0, ChickenRaw);
         overrideMeatItem("minecraft:cooked_chicken", 0, ChickenCooked);
@@ -305,6 +342,7 @@ public final class GT6MaterialExpansion {
 
     @EventHandler
     public void serverStarted(FMLServerStartedEvent event) {
+        MiscMaterials.diagnoseMinecarts();
         registerMeatProcessing("minecraft:chicken", ChickenRaw, ChickenCooked);
         registerMeatProcessing("minecraft:beef", BeefRaw, BeefCooked);
         registerMeatProcessing("minecraft:porkchop", PorkRaw, PorkCooked);
@@ -431,4 +469,30 @@ public final class GT6MaterialExpansion {
             OreDictManager.INSTANCE.addItemData(stack, new OreDictItemData(material, amount));
         }
     }
+    /**
+     * A filled fluid bottle represents its contents AND its returned glass.
+     * Copy GT6's actual empty-bottle material quantity rather than guessing
+     * an amount of Glass. Do not override existing GT6 item assignments.
+     */
+    private static void assignBottledFluidIfMissing(String registryName, int metadata,
+                                                    OreDictMaterial fluidMaterial, long fluidAmount) {
+        Object registered = Item.itemRegistry.getObject(registryName);
+        if (!(registered instanceof Item) || fluidMaterial == null) return;
+        ItemStack filled = new ItemStack((Item) registered, 1, metadata);
+        if (OreDictManager.INSTANCE.getItemData(filled) != null) return;
+
+        OreDictItemData emptyData = OM.anydata(new ItemStack(Items.glass_bottle, 1, 0));
+        if (emptyData == null || emptyData.getAllMaterialStacks().isEmpty()) {
+            FMLLog.warning("[GT6MaterialExpansion] No material data for empty glass bottle; %s:%d unchanged",
+                registryName, metadata);
+            return;
+        }
+        java.util.List<OreDictMaterialStack> bottle = emptyData.getAllMaterialStacks();
+        OreDictItemData combined = new OreDictItemData(OM.stack(fluidMaterial, fluidAmount),
+            bottle.toArray(new OreDictMaterialStack[bottle.size()]));
+        OreDictManager.INSTANCE.addItemData(filled, combined);
+        FMLLog.info("[GT6MaterialExpansion] Bottled fluid %s:%d includes %d empty-bottle material components",
+            registryName, metadata, bottle.size());
+    }
+
 }

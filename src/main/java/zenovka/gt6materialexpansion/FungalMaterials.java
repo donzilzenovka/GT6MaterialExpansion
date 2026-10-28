@@ -17,14 +17,14 @@ public final class FungalMaterials {
     private static final long U = CS.U;
     private FungalMaterials() {}
 
-    public static void register(OreDictMaterial mycelium) {
+    public static void register(OreDictMaterial Mycelium) {
         Set<String> seen = new HashSet<String>();
-        assignBlock("minecraft:brown_mushroom", 0, mycelium, U / 4, seen);
-        assignBlock("minecraft:red_mushroom", 0, mycelium, U / 4, seen);
+        assignBlock("minecraft:brown_mushroom", 0, Mycelium, U / 4, seen);
+        assignBlock("minecraft:red_mushroom", 0, Mycelium, U / 4, seen);
         // Mushroom blocks use metadata for cap, pores and stem textures.
         for (int meta = 0; meta < 16; meta++) {
-            assignBlock("minecraft:brown_mushroom_block", meta, mycelium, U, seen);
-            assignBlock("minecraft:red_mushroom_block", meta, mycelium, U, seen);
+            assignBlock("minecraft:brown_mushroom_block", meta, Mycelium, U, seen);
+            assignBlock("minecraft:red_mushroom_block", meta, Mycelium, U, seen);
         }
         for (String oreName : OreDictionary.getOreNames()) {
             String name = oreName.toLowerCase(java.util.Locale.ROOT);
@@ -33,7 +33,7 @@ public final class FungalMaterials {
             if (!mushroom) continue;
             long amount = name.startsWith("block") ? U : U / 4;
             for (ItemStack stack : OreDictionary.getOres(oreName))
-                assign(stack, mycelium, amount, seen);
+                assign(stack, Mycelium, amount, seen);
         }
         FMLLog.info("[GT6MaterialExpansion] Fungal scan assigned %d stacks", seen.size());
     }
