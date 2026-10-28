@@ -1,6 +1,7 @@
 package zenovka.gt6materialexpansion;
 
 import gregapi.data.CS;
+import gregapi.recipes.Recipe;
 import gregapi.data.MT;
 import gregapi.oredict.OreDictItemData;
 import gregapi.oredict.OreDictMaterial;
@@ -19,7 +20,6 @@ import net.minecraftforge.oredict.ShapelessOreRecipe;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
@@ -100,6 +100,19 @@ public final class MaterialDefaultResolver {
                     return matter();
                 }
                 if (furnaceMatches == 1) return resolve(furnaceInput, visiting, depth + 1);
+                for (Recipe.RecipeMap map : Recipe.RecipeMap.RECIPE_MAP_LIST) {
+                    for (Recipe machineRecipe : map.mRecipeList) {
+                        if (machineRecipe.mOutputs == null) continue;
+                        for (ItemStack machineOutput : machineRecipe.mOutputs) {
+                            if (machineOutput != null && machineOutput.getItem() == stack.getItem()
+                                    && machineOutput.getItemDamage() == stack.getItemDamage()) {
+                                warnOnce(key, "GT6 machine recipe in " + map.mNameInternal
+                                        + "; NEI ordering and fluid/material accounting not yet implemented");
+                                return matter();
+                            }
+                        }
+                    }
+                }
                 return matter();
             }
             IRecipe recipe = selected;
