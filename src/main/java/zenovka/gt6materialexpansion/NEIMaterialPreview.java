@@ -6,6 +6,9 @@ import codechicken.nei.recipe.GuiUsageRecipe;
 import codechicken.nei.recipe.ICraftingHandler;
 import codechicken.nei.recipe.IUsageHandler;
 import cpw.mods.fml.common.FMLLog;
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import gregapi.NEI_RecipeMap;
@@ -23,14 +26,31 @@ public final class NEIMaterialPreview extends NEI_RecipeMap {
     @Override
     public NEI_RecipeMap newInstance() { return new NEIMaterialPreview(); }
 
+    private static boolean installed;
+    private static boolean registered;
+
     public static void install() {
+        if (registered) return;
+        registered = true;
+        FMLCommonHandler.instance().bus().register(new NEIMaterialPreview());
+        FMLLog.info("[GT6MaterialExpansion] Mixer NEI integration queued for client ticks");
+    }
+
+    @SubscribeEvent
+    public void onClientTick(TickEvent.ClientTickEvent event) {
+        if (installed || event.phase != TickEvent.Phase.END) return;
+        if (replaceWhenAvailable()) installed = true;
+    }
+
+    private static boolean replaceWhenAvailable() {
         NEIMaterialPreview replacement = new NEIMaterialPreview();
         int replaced = 0;
         replaced += replaceCrafting(GuiCraftingRecipe.craftinghandlers, replacement);
         replaced += replaceCrafting(GuiCraftingRecipe.serialCraftingHandlers, replacement);
         replaced += replaceUsage(GuiUsageRecipe.usagehandlers, replacement);
         replaced += replaceUsage(GuiUsageRecipe.serialUsageHandlers, replacement);
-        if (replaced == 0) {
+        if (replaced == 0) return false;
+        {
             for (ICraftingHandler handler : GuiCraftingRecipe.craftinghandlers) {
                 if (handler != null) FMLLog.info("[GT6MaterialExpansion] NEI crafting handler: id=%s class=%s",
                         handler.getHandlerId(), handler.getClass().getName());
@@ -45,6 +65,7 @@ public final class NEIMaterialPreview extends NEI_RecipeMap {
                 + ", serialCrafting=" + GuiCraftingRecipe.serialCraftingHandlers.size()
                 + ", usage=" + GuiUsageRecipe.usagehandlers.size()
                 + ", serialUsage=" + GuiUsageRecipe.serialUsageHandlers.size() + ")");
+        return true;
     }
 
     private static int replaceCrafting(List<ICraftingHandler> handlers, NEIMaterialPreview replacement) {
@@ -66,7 +87,7 @@ public final class NEIMaterialPreview extends NEI_RecipeMap {
         synchronized (handlers) {
             for (int i = 0; i < handlers.size(); i++) {
                 IUsageHandler handler = handlers.get(i);
-                if (handler != null && handler.getClass() == NEI_RecipeMap.class
+                if (handler != null && handler instanceof NEI_RecipeMap
                         && RM.Mixer.mNameNEI.equals(handler.getHandlerId())) {
                     handlers.set(i, replacement);
                     count++;
