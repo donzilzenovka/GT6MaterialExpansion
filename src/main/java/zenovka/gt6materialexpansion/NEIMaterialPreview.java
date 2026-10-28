@@ -5,6 +5,8 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import gregapi.NEI_RecipeMap;
 import gregapi.data.RM;
+import gregapi.util.OM;
+import gregapi.oredict.OreDictItemData;
 import gregapi.oredict.OreDictMaterialStack;
 import gregapi.recipes.Recipe;
 import net.minecraft.client.Minecraft;
@@ -51,7 +53,15 @@ public final class NEIMaterialPreview extends NEI_RecipeMap {
         Recipe recipe = ((CachedDefaultRecipe) arecipes.get(recipeIndex)).mRecipe;
         List<OreDictMaterialStack> parts = RecipeMaterialPreview.forOutput(recipe, 0);
         // Alter only the cached NEI display stack, never the registered GT6 recipe output.
-        if (parts != null && !parts.isEmpty() && !((CachedDefaultRecipe) arecipes.get(recipeIndex)).mOutputs.isEmpty()) {
+        ItemStack original = recipe.mOutputs != null && recipe.mOutputs.length > 0 ? recipe.mOutputs[0] : null;
+        OreDictItemData existing = original == null ? null : OM.anydata(original);
+        boolean hasExisting = existing != null && existing.getAllMaterialStacks() != null
+                && !existing.getAllMaterialStacks().isEmpty();
+        if (!hasExisting && original != null && original.hasTagCompound()) {
+            NBTTagCompound originalTag = original.getTagCompound();
+            hasExisting = originalTag.hasKey("gt.recycling.mats") || originalTag.hasKey("zenovka.original.mats");
+        }
+        if (!hasExisting && parts != null && !parts.isEmpty() && !((CachedDefaultRecipe) arecipes.get(recipeIndex)).mOutputs.isEmpty()) {
             codechicken.nei.PositionedStack displayed = ((CachedDefaultRecipe) arecipes.get(recipeIndex)).mOutputs.get(0);
             ItemStack preview = recipe.mOutputs[0].copy();
             NBTTagCompound tag = preview.getTagCompound();
@@ -63,8 +73,10 @@ public final class NEIMaterialPreview extends NEI_RecipeMap {
         }
         Minecraft mc = Minecraft.getMinecraft();
         if (mc == null || mc.fontRenderer == null) return;
-        String label = "Material: ";
-        if (parts == null || parts.isEmpty()) {
+        String label = hasExisting ? "Material: Existing GT6 composition" : "Material: ";
+        if (hasExisting) {
+            // Preserve the canonical material identity; do not add input materials.
+        } else if (parts == null || parts.isEmpty()) {
             label += "Unresolved";
         } else {
             StringBuilder value = new StringBuilder();
