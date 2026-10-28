@@ -46,6 +46,7 @@ public final class RecipeMaterialPreview {
             if (ingredient == null) continue;
             ItemStack chosen = choose(ingredient);
             if (chosen == null) return null;
+            if (chosen.stackSize == 0) continue; // reusable shaping tools
             if (!accumulate(totals, MaterialDefaultResolver.resolve(chosen), 1)) return null;
             if (chosen.getItem().hasContainerItem(chosen)) {
                 ItemStack container = chosen.getItem().getContainerItem(chosen);
@@ -58,7 +59,8 @@ public final class RecipeMaterialPreview {
     private static ItemStack choose(Object ingredient) {
         if (ingredient instanceof ItemStack) {
             ItemStack stack = ((ItemStack) ingredient).copy();
-            stack.stackSize = 1;
+            // Preserve zero-size GT6 tool markers; they are not consumed.
+            if (stack.stackSize > 0) stack.stackSize = 1;
             return stack;
         }
         if (ingredient instanceof List) {
