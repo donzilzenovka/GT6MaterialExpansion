@@ -40,6 +40,7 @@ public final class GT6MaterialExpansion {
     public static OreDictMaterial Soil;
     public static OreDictMaterial PlantMatter;
     public static OreDictMaterial OrganicMatter;
+    public static OreDictMaterial Matter;
     public static OreDictMaterial Mycelium;
     public static OreDictMaterial AppleFruit, Carrot, Egg;
     public static OreDictMaterial HeavyCream, CoconutCream;
@@ -68,6 +69,9 @@ public final class GT6MaterialExpansion {
         PlantMatter = OreDictMaterial.createMaterial(32026, "PlantMatter", "Plant Matter");
         PlantMatter.setDensity(0.45D);
         PlantMatter.setRGBa(90, 145, 55, 255);
+        Matter = OreDictMaterial.createMaterial(32042, "Matter", "Matter (Unresolved)");
+        Matter.setDensity(1.00D);
+        Matter.setRGBa(255, 0, 200, 255);
         OrganicMatter = OreDictMaterial.createMaterial(32036, "OrganicMatter", "Organic Matter");
         // Hydrated, undifferentiated animal tissue; provisional bulk density.
         OrganicMatter.setDensity(1.05D);
