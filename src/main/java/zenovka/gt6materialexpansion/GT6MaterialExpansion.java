@@ -259,13 +259,6 @@ public final class GT6MaterialExpansion {
         }
         FoodMaterials.register(AppleFruit, Carrot, Egg); // Per-stack composition of crafted foods; no global overrides.
         MinecraftForge.EVENT_BUS.register(new MaterialAcquisitionHandler());
-        if (event.getSide().isClient() && Loader.isModLoaded("NotEnoughItems")) {
-            try {
-                Class.forName("zenovka.gt6materialexpansion.NEIMaterialPreview").getMethod("register").invoke(null);
-            } catch (Throwable error) {
-                FMLLog.warning("[GT6MaterialExpansion] NEI material preview registration failed: %s", error);
-            }
-        }
         // Bottled food fluids and ice cream lack item-material data in GT6.
         // Existing assignments take precedence; no recipe ingredient (including salt) is inferred.
         assignBottledFluidIfMissing("gregtech:gt.multiitem.bottles", 1101, HeavyCream, U);
@@ -292,6 +285,8 @@ public final class GT6MaterialExpansion {
     public void loadComplete(FMLLoadCompleteEvent event) {
         if (event.getSide().isClient() && Loader.isModLoaded("NotEnoughItems")) {
             try {
+                Class.forName("zenovka.gt6materialexpansion.NEIMaterialPreview")
+                    .getMethod("install").invoke(null);
                 Class.forName("zenovka.gt6materialexpansion.NEICraftingMaterialPreview")
                     .getMethod("install").invoke(null);
                 Class.forName("zenovka.gt6materialexpansion.NEIShapelessMaterialPreview")
