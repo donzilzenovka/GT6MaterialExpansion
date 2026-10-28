@@ -6,6 +6,8 @@ import gregapi.oredict.OreDictItemData;
 import gregapi.oredict.OreDictMaterial;
 import gregapi.oredict.OreDictMaterialStack;
 import gregapi.util.OM;
+import cpw.mods.fml.common.FMLLog;
+import net.minecraft.item.crafting.FurnaceRecipes;
 import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
@@ -16,6 +18,10 @@ import net.minecraftforge.oredict.ShapedOreRecipe;
 import net.minecraftforge.oredict.ShapelessOreRecipe;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,12 +29,18 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Experimental first-recipe default resolver. Uses only ordinary crafting
- * recipes for now; GT6 machine/fluid recipes require a separate adapter.
+ * Conservative canonical resolver. Handles unambiguous crafting and furnace
+ * recipes; ambiguous NEI ordering and GT6 machine/fluid recipes remain unresolved.
  * Unknown or cyclic ingredients become Matter, never a fabricated material.
  */
 public final class MaterialDefaultResolver {
     private MaterialDefaultResolver() {}
+    private static final Set<String> WARNED = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+
+    private static void warnOnce(String key, String reason) {
+        if (WARNED.add(key + "|" + reason))
+            FMLLog.warning("[GT6MaterialExpansion][canonical-order] %s: %s; assigning Matter (Unresolved)", key, reason);
+    }
 
     public static List<OreDictMaterialStack> resolve(ItemStack stack) {
         List<OreDictMaterialStack> result = resolve(stack, new HashSet<String>(), 0);
@@ -56,15 +68,48 @@ public final class MaterialDefaultResolver {
                 + ":" + stack.getItemDamage();
         if (!visiting.add(key)) return matter();
         try {
+            IRecipe selected = null;
+            int craftingMatches = 0;
             for (Object entry : CraftingManager.getInstance().getRecipeList()) {
                 if (!(entry instanceof IRecipe)) continue;
                 IRecipe recipe = (IRecipe) entry;
                 ItemStack output = recipe.getRecipeOutput();
                 if (output == null || output.getItem() != stack.getItem()
                         || output.getItemDamage() != stack.getItemDamage()) continue;
-                // First registered matching recipe wins, even when unresolved.
-                Object[] inputs = inputs(recipe);
-                if (inputs == null || output.stackSize <= 0) return matter();
+                craftingMatches++;
+                selected = recipe;
+            }
+            if (craftingMatches > 1) {
+                warnOnce(key, "multiple crafting recipes; NEI handler ordering not verified");
+                return matter();
+            }
+            if (craftingMatches == 0) {
+                ItemStack furnaceInput = null;
+                int furnaceMatches = 0;
+                for (Object raw : FurnaceRecipes.smelting().getSmeltingList().entrySet()) {
+                    Map.Entry<?, ?> entry = (Map.Entry<?, ?>) raw;
+                    if (!(entry.getValue() instanceof ItemStack) || !(entry.getKey() instanceof ItemStack)) continue;
+                    ItemStack output = (ItemStack) entry.getValue();
+                    if (output.getItem() == stack.getItem() && output.getItemDamage() == stack.getItemDamage()) {
+                        furnaceMatches++;
+                        furnaceInput = (ItemStack) entry.getKey();
+                    }
+                }
+                if (furnaceMatches > 1) {
+                    warnOnce(key, "multiple furnace recipes; NEI handler ordering not verified");
+                    return matter();
+                }
+                if (furnaceMatches == 1) return resolve(furnaceInput, visiting, depth + 1);
+                return matter();
+            }
+            IRecipe recipe = selected;
+            ItemStack output = recipe.getRecipeOutput();
+            Object[] inputs = inputs(recipe);
+            if (inputs == null || output.stackSize <= 0) {
+                warnOnce(key, "unsupported crafting recipe type or invalid output count");
+                return matter();
+            }
+            {
                 Map<OreDictMaterial, Long> totals = new LinkedHashMap<OreDictMaterial, Long>();
                 for (Object ingredient : inputs) {
                     ItemStack chosen = choose(ingredient);
