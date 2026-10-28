@@ -65,6 +65,6 @@ public final class NEIMaterialPreview extends NEI_RecipeMap {
             }
             label += value.toString();
         }
-        mc.fontRenderer.drawString(label, 10, 116, 0x404040);
+        mc.fontRenderer.drawString(label, 10, 166, 0x404040);
     }
 }
