@@ -1,6 +1,7 @@
 package zenovka.gt6materialexpansion;
 
 import gregapi.data.CS;
+import gregapi.item.multiitem.MultiItemTool;
 import gregapi.recipes.Recipe;
 import gregapi.data.MT;
 import gregapi.oredict.OreDictItemData;
@@ -110,6 +111,9 @@ public final class MaterialDefaultResolver {
 
     private static List<OreDictMaterialStack> resolve(ItemStack stack, Set<String> visiting, int depth) {
         if (stack == null || stack.getItem() == null || depth > 24) return matter();
+        // A GT6 tool is not a canonical craft ingredient: do not recursively
+        // invent a material composition for its manufacturing recipe.
+        if (stack.getItem() instanceof MultiItemTool) return Collections.emptyList();
         NBTTagCompound tag = stack.getTagCompound();
         if (tag != null) {
             String key = tag.hasKey("gt.recycling.mats") ? "gt.recycling.mats"
