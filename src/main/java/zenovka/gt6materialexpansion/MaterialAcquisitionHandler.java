@@ -2,6 +2,7 @@ package zenovka.gt6materialexpansion;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import gregapi.oredict.OreDictItemData;
+import gregapi.item.multiitem.MultiItemTool;
 import gregapi.oredict.OreDictMaterialStack;
 import gregapi.util.OM;
 import net.minecraft.item.ItemStack;
@@ -28,6 +29,8 @@ public final class MaterialAcquisitionHandler {
     /** Safe to call from future container and inventory insertion adapters. */
     public static boolean annotate(ItemStack stack) {
         if (stack == null || stack.getItem() == null) return false;
+        // GT6 tools carry their own material identity. Never attach canonical Matter.
+        if (stack.getItem() instanceof MultiItemTool) return false;
         NBTTagCompound tag = stack.getTagCompound();
         if (tag != null && (tag.hasKey(ORIGINAL) || tag.hasKey(RECYCLING))) return false;
         OreDictItemData data = OM.anydata(stack);
