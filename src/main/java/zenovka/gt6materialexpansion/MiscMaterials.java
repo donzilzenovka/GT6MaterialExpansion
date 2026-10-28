@@ -68,7 +68,7 @@ public final class MiscMaterials {
         // Preserve specific GT6 materials rather than inventing dye or slime elements.
         put("minecraft:slime_ball", 0, MT.Glue, U / 9);
         put("minecraft:magma_cream", 0, MT.Glue, U / 9, MT.Blaze, U / 9);
-        put("minecraft:reeds", 0, Reed, U / 4, MT.Sugar, U / 4);
+        put("minecraft:reeds", 0, Reed, U);
         put("minecraft:dye", 3, MT.Cocoa, U);
         put("minecraft:dye", 4, MT.Lapis, U);
         put("minecraft:dye", 15, MT.Bone, U);
