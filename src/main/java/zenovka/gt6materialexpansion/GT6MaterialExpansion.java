@@ -348,6 +348,7 @@ public final class GT6MaterialExpansion {
 
     @EventHandler
     public void serverStarted(FMLServerStartedEvent event) {
+        RecipeDiagnostics.dump();
         MiscMaterials.diagnoseMinecarts();
         registerMeatProcessing("minecraft:chicken", ChickenRaw, ChickenCooked);
         registerMeatProcessing("minecraft:beef", BeefRaw, BeefCooked);
