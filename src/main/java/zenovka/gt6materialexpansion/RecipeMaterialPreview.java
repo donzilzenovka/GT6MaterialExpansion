@@ -1,6 +1,7 @@
 package zenovka.gt6materialexpansion;
 
 import gregapi.data.MT;
+import gregapi.item.multiitem.MultiItemTool;
 import gregapi.oredict.OreDictMaterial;
 import gregapi.oredict.OreDictMaterialStack;
 import gregapi.recipes.Recipe;
@@ -46,7 +47,7 @@ public final class RecipeMaterialPreview {
             if (ingredient == null) continue;
             ItemStack chosen = choose(ingredient);
             if (chosen == null) return null;
-            if (chosen.stackSize == 0) continue; // reusable shaping tools
+            if (chosen.stackSize == 0 || chosen.getItem() instanceof MultiItemTool) continue; // shaping tools are not consumed
             if (!accumulate(totals, MaterialDefaultResolver.resolve(chosen), 1)) return null;
             if (chosen.getItem().hasContainerItem(chosen)) {
                 ItemStack container = chosen.getItem().getContainerItem(chosen);
@@ -108,7 +109,7 @@ public final class RecipeMaterialPreview {
         Map<OreDictMaterial, Long> totals = new LinkedHashMap<OreDictMaterial, Long>();
         if (recipe.mInputs == null || recipe.mInputs.length == 0) return null;
         for (ItemStack input : recipe.mInputs) {
-            if (input == null || input.stackSize <= 0) continue; // molds and reusable tools
+            if (input == null || input.stackSize <= 0 || input.getItem() instanceof MultiItemTool) continue; // reusable tools
             ItemStack single = input.copy();
             single.stackSize = 1;
             List<OreDictMaterialStack> composition = MaterialDefaultResolver.resolve(single);
