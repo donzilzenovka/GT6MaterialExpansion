@@ -240,6 +240,16 @@ public final class GT6MaterialExpansion {
         // Vanilla torches are invariant, fuel-agnostic objects; no per-stack NBT.
         // Respect any composition another mod may have registered.
         assignIfMissing("minecraft:torch", 0, MT.Wood, U / 2);
+        // GT6 Fruit Remains (MultiItemFood metadata 12101): 0.036 U per item.
+        // Explicit override: the generic itemPlantRemains ore association may already
+        // have supplied 0.250 U, so an assign-if-missing check is insufficient.
+        Object fruitRemainsItem = Item.itemRegistry.getObject("gregtech:gt.multiitem.food");
+        if (fruitRemainsItem instanceof Item) {
+            ItemStack fruitRemains = new ItemStack((Item) fruitRemainsItem, 1, 12101);
+            boolean changed = OreDictManager.INSTANCE.setItemData(
+                fruitRemains, new OreDictItemData(PlantMatter, 36 * U / 1000));
+            FMLLog.info("[GT6MaterialExpansion] Fruit Remains 0.036 U override accepted=%s", changed);
+        }
         FoodMaterials.register(AppleFruit, Carrot, Egg); // Per-stack composition of crafted foods; no global overrides.
         // Bottled food fluids and ice cream lack item-material data in GT6.
         // Existing assignments take precedence; no recipe ingredient (including salt) is inferred.
