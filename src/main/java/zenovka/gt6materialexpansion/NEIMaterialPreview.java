@@ -1,92 +1,100 @@
 package zenovka.gt6materialexpansion;
 
+import codechicken.nei.PositionedStack;
+import codechicken.nei.recipe.GuiCraftingRecipe;
+import codechicken.nei.recipe.GuiUsageRecipe;
+import codechicken.nei.recipe.ICraftingHandler;
+import codechicken.nei.recipe.IUsageHandler;
 import cpw.mods.fml.common.FMLLog;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import gregapi.NEI_RecipeMap;
 import gregapi.data.RM;
-import gregapi.util.OM;
-import gregapi.oredict.OreDictItemData;
-import gregapi.oredict.OreDictMaterialStack;
 import gregapi.recipes.Recipe;
-import net.minecraft.client.Minecraft;
+import gregapi.oredict.OreDictMaterialStack;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-
 import java.util.List;
 
-/**
- * Experimental additional NEI Mixer view, not a replacement for GT6's handler.
- * This keeps the original GT6 Mixer display untouched during compatibility tests.
- */
+/** Replaces GT6's NEI Mixer handler in-place; does not modify machine recipes. */
 @SideOnly(Side.CLIENT)
 public final class NEIMaterialPreview extends NEI_RecipeMap {
-    private NEIMaterialPreview() {
-        super(RM.Mixer);
-    }
-
-    public static void register() {
-        new NEIMaterialPreview().init();
-        FMLLog.info("[GT6MaterialExpansion] Registered experimental NEI Mixer material preview");
-    }
+    public NEIMaterialPreview() { super(RM.Mixer); }
 
     @Override
-    public NEI_RecipeMap newInstance() {
-        return new NEIMaterialPreview();
+    public NEI_RecipeMap newInstance() { return new NEIMaterialPreview(); }
+
+    public static void install() {
+        NEIMaterialPreview replacement = new NEIMaterialPreview();
+        int replaced = 0;
+        replaced += replaceCrafting(GuiCraftingRecipe.craftinghandlers, replacement);
+        replaced += replaceCrafting(GuiCraftingRecipe.serialCraftingHandlers, replacement);
+        replaced += replaceUsage(GuiUsageRecipe.usagehandlers, replacement);
+        replaced += replaceUsage(GuiUsageRecipe.serialUsageHandlers, replacement);
+        FMLLog.info("[GT6MaterialExpansion] Mixer NEI handler replacements: " + replaced);
     }
 
-    @Override
-    public String getOverlayIdentifier() {
-        return "gt6materialexpansion.mixer.materials";
-    }
-
-    @Override
-    public String getRecipeName() {
-        return "Mixer (Material Preview)";
-    }
-
-    @Override
-    public void drawExtras(int recipeIndex) {
-        super.drawExtras(recipeIndex);
-        if (recipeIndex < 0 || recipeIndex >= arecipes.size()
-                || !(arecipes.get(recipeIndex) instanceof CachedDefaultRecipe)) return;
-        Recipe recipe = ((CachedDefaultRecipe) arecipes.get(recipeIndex)).mRecipe;
-        List<OreDictMaterialStack> parts = RecipeMaterialPreview.forOutput(recipe, 0);
-        // Alter only the cached NEI display stack, never the registered GT6 recipe output.
-        ItemStack original = recipe.mOutputs != null && recipe.mOutputs.length > 0 ? recipe.mOutputs[0] : null;
-        OreDictItemData existing = original == null ? null : OM.anydata(original);
-        boolean hasExisting = existing != null && existing.getAllMaterialStacks() != null
-                && !existing.getAllMaterialStacks().isEmpty();
-        if (!hasExisting && original != null && original.hasTagCompound()) {
-            NBTTagCompound originalTag = original.getTagCompound();
-            hasExisting = originalTag.hasKey("gt.recycling.mats") || originalTag.hasKey("zenovka.original.mats");
+    private static int replaceCrafting(List<ICraftingHandler> handlers, NEIMaterialPreview replacement) {
+        int count = 0;
+        synchronized (handlers) {
+            for (int i = 0; i < handlers.size(); i++) {
+                ICraftingHandler handler = handlers.get(i);
+                if (handler != null && handler.getClass() == NEI_RecipeMap.class
+                        && RM.Mixer.mNameNEI.equals(handler.getHandlerId())) {
+                    handlers.set(i, replacement);
+                    count++;
+                }
+            }
         }
-        if (!hasExisting && parts != null && !parts.isEmpty()
-                && !((CachedDefaultRecipe) arecipes.get(recipeIndex)).mOutputs.isEmpty()) {
-            codechicken.nei.PositionedStack displayed = ((CachedDefaultRecipe) arecipes.get(recipeIndex)).mOutputs.get(0);
-            ItemStack preview = RecipePreviewTags.copyWithMaterials(original, parts);
+        return count;
+    }
+
+    private static int replaceUsage(List<IUsageHandler> handlers, NEIMaterialPreview replacement) {
+        int count = 0;
+        synchronized (handlers) {
+            for (int i = 0; i < handlers.size(); i++) {
+                IUsageHandler handler = handlers.get(i);
+                if (handler != null && handler.getClass() == NEI_RecipeMap.class
+                        && RM.Mixer.mNameNEI.equals(handler.getHandlerId())) {
+                    handlers.set(i, replacement);
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    @Override
+    public void loadCraftingRecipes(String id, Object... args) {
+        super.loadCraftingRecipes(id, args);
+        decorate();
+    }
+
+    @Override
+    public void loadCraftingRecipes(ItemStack output) {
+        super.loadCraftingRecipes(output);
+        decorate();
+    }
+
+    @Override
+    public void loadUsageRecipes(ItemStack input) {
+        super.loadUsageRecipes(input);
+        decorate();
+    }
+
+    private void decorate() {
+        for (CachedRecipe cached : arecipes) {
+            if (!(cached instanceof CachedDefaultRecipe)) continue;
+            CachedDefaultRecipe displayedRecipe = (CachedDefaultRecipe) cached;
+            Recipe recipe = displayedRecipe.mRecipe;
+            if (recipe == null || recipe.mOutputs == null || recipe.mOutputs.length != 1
+                    || recipe.mOutputs[0] == null || displayedRecipe.mOutputs.isEmpty()) continue;
+            List<OreDictMaterialStack> parts = RecipeMaterialPreview.forOutput(recipe, 0);
+            if (parts == null || parts.isEmpty()) continue;
+            ItemStack preview = RecipePreviewTags.copyWithMaterials(recipe.mOutputs[0], parts);
+            if (preview == null) continue;
+            PositionedStack displayed = displayedRecipe.mOutputs.get(0);
             displayed.items = new ItemStack[] {preview};
             displayed.item = preview;
         }
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc == null || mc.fontRenderer == null) return;
-        String label = hasExisting ? "Material: Existing GT6 composition" : "Material: ";
-        if (hasExisting) {
-            // Preserve the canonical material identity; do not add input materials.
-        } else if (parts == null || parts.isEmpty()) {
-            label += "Unresolved";
-        } else {
-            StringBuilder value = new StringBuilder();
-            for (OreDictMaterialStack part : parts) {
-                if (value.length() > 0) value.append(", ");
-                value.append(part.mMaterial.mNameInternal);
-                if (value.length() > 42) {
-                    value.append("...");
-                    break;
-                }
-            }
-            label += value.toString();
-        }
-        mc.fontRenderer.drawString(label, 10, 166, 0x404040);
     }
 }
