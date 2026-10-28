@@ -20,17 +20,13 @@ import net.minecraft.inventory.ContainerPlayer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.inventory.SlotCrafting;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Item;
-import cpw.mods.fml.common.FMLLog;
 import net.minecraft.nbt.NBTTagCompound;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
- * Experimental recipe-derived GT6 tool composition.
+ * Recipe-derived GT6 material composition for crafting outputs and tools.
  * Only newly crafted stacks are modified; no inventory scanning or global
  * item/metadata registrations. Missing input material data causes a safe skip.
  *
@@ -52,12 +48,9 @@ public final class ToolMaterials {
     public void onCrafted(PlayerEvent.ItemCraftedEvent event) {
         ItemStack result = event.crafting;
         if (result == null || event.craftMatrix == null) return;
-        boolean debugCake = "minecraft:cake".equals(Item.itemRegistry.getNameForObject(result.getItem()));
-        if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Cake crafted; checking inheritance");
         NBTTagCompound existing = result.getTagCompound();
         // A previously established stack-specific composition always wins.
         if (existing != null && (existing.hasKey(RECYCLING_TAG) || existing.hasKey(ORIGINAL_TAG))) {
-            if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Cake skipped: existing stack composition tag");
             return;
         }
 
@@ -67,17 +60,14 @@ public final class ToolMaterials {
         if (!tool) {
             OreDictItemData outputData = OM.anydata(result);
             if (outputData != null && !outputData.getAllMaterialStacks().isEmpty()) {
-                if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Cake skipped: output already has GT6 material data");
                 return;
             }
         }
 
-        List<OreDictMaterialStack> components = resolveIngredients(event.craftMatrix, result.stackSize, debugCake);
+        List<OreDictMaterialStack> components = CraftingMaterialResolver.resolveIngredients(event.craftMatrix, result.stackSize);
         if (components == null || components.isEmpty()) {
-            if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Cake skipped: ingredient resolution failed");
             return;
         }
-        if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Cake inherited %d material components", components.size());
 
         NBTTagCompound tag = existing == null ? new NBTTagCompound() : existing;
         if (tool) {
@@ -120,7 +110,7 @@ public final class ToolMaterials {
         OreDictItemData outputData = OM.anydata(result);
         if (outputData != null && !outputData.getAllMaterialStacks().isEmpty()) return;
 
-        List<OreDictMaterialStack> components = resolveIngredients(grid, result.stackSize, false);
+        List<OreDictMaterialStack> components = CraftingMaterialResolver.resolveIngredients(grid, result.stackSize);
         if (components == null || components.isEmpty()) return;
         NBTTagCompound tag = existing == null ? new NBTTagCompound() : (NBTTagCompound) existing.copy();
         OreDictMaterialStack.saveList(RECYCLING_TAG, tag, components);
@@ -180,114 +170,4 @@ public final class ToolMaterials {
         return true;
     }
 
-    /**
-     * Use the actual crafting inputs, not an arbitrary matching recipe from NEI.
-     * Fail closed if an ingredient is unknown or its returned container cannot
-     * be resolved, so we never silently claim an incomplete composition.
-     */
-    private static List<OreDictMaterialStack> resolveIngredients(IInventory grid, int outputCount, boolean debugCake) {
-        Map<OreDictMaterial, Long> totals = new LinkedHashMap<OreDictMaterial, Long>();
-        boolean found = false;
-        for (int slot = 0; slot < grid.getSizeInventory(); slot++) {
-            ItemStack ingredient = grid.getStackInSlot(slot);
-            if (ingredient == null || ingredient.getItem() == null) continue;
-            found = true;
-            ItemStack single = ingredient.copy();
-            single.stackSize = 1;
-
-            OreDictItemData data = OM.anydata(single);
-            if (data == null || data.getAllMaterialStacks().isEmpty()) {
-                if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Input slot %d has no readable materials: %s", slot, single.getDisplayName());
-                return null;
-            }
-            if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Input slot %d: %s, components=%d", slot, single.getDisplayName(), data.getAllMaterialStacks().size());
-            // Keep each ingredient separate: a returned container must never
-            // subtract material supplied by a different recipe ingredient.
-            Map<OreDictMaterial, Long> consumed = new LinkedHashMap<OreDictMaterial, Long>();
-            if (!accumulate(consumed, data, 1)) {
-                if (debugCake) {
-                    FMLLog.info("[GT6MaterialExpansion/Crafting] Invalid ingredient material entry in slot %d; full component details:", slot);
-                    int componentIndex = 0;
-                    for (OreDictMaterialStack component : data.getAllMaterialStacks()) {
-                        FMLLog.info("[GT6MaterialExpansion/Crafting] Component %d: material=%s, amount=%s",
-                            componentIndex++,
-                            component == null ? "<null stack>" : String.valueOf(component.mMaterial),
-                            component == null ? "<null stack>" : String.valueOf(component.mAmount));
-                    }
-                }
-                return null;
-            }
-
-            if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Slot %d container flag=%s", slot, single.getItem().hasContainerItem(single));
-            if (single.getItem().hasContainerItem(single)) {
-                ItemStack returned = single.getItem().getContainerItem(single);
-                if (returned != null) {
-                    OreDictItemData returnedData = OM.anydata(returned);
-                    if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Returned container: %s, material data=%s", returned.getDisplayName(), returnedData == null ? "missing" : "present");
-                    if (returnedData != null && !returnedData.getAllMaterialStacks().isEmpty()) {
-                        // Some filled containers (notably GT6 Heavy Cream) describe
-                        // their contents only; their glass is not in the input data.
-                        // Subtract a returned container only when its entire
-                        // composition is actually included in this ingredient.
-                        boolean represented = true;
-                        boolean overlaps = false;
-                        for (OreDictMaterialStack part : returnedData.getAllMaterialStacks()) {
-                            if (part == null || part.mMaterial == null) return null;
-                            if (part.mMaterial == MT.Empty && part.mAmount == -1) continue;
-                            if (part.mAmount < 0) return null;
-                            Long amount = consumed.get(part.mMaterial);
-                            if (amount != null && amount > 0) overlaps = true;
-                            if (amount == null || amount < part.mAmount) represented = false;
-                        }
-                        if (represented) {
-                            if (!accumulate(consumed, returnedData, -1)) return null;
-                            if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Container material subtracted from ingredient");
-                        } else if (!overlaps) {
-                            if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Container material not represented in ingredient; no subtraction");
-                        } else {
-                            if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Container partly represented; skipping ambiguous recipe");
-                            return null;
-                        }
-                    }
-                }
-            }
-            if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Slot %d resolved, components=%d", slot, consumed.size());
-            for (Map.Entry<OreDictMaterial, Long> part : consumed.entrySet()) {
-                Long previous = totals.get(part.getKey());
-                long before = previous == null ? 0 : previous;
-                long amount = part.getValue();
-                if (amount > Long.MAX_VALUE - before) return null;
-                totals.put(part.getKey(), before + amount);
-            }
-        }
-        if (!found || outputCount <= 0) return null;
-        if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Grid complete; aggregate components=%d", totals.size());
-        List<OreDictMaterialStack> result = new ArrayList<OreDictMaterialStack>();
-        for (Map.Entry<OreDictMaterial, Long> entry : totals.entrySet()) {
-            long amount = entry.getValue();
-            if (amount < 0 || amount % outputCount != 0) {
-                if (debugCake) FMLLog.info("[GT6MaterialExpansion/Crafting] Invalid final amount for %s: %d, output count=%d", entry.getKey(), amount, outputCount);
-                return null;
-            }
-            if (amount > 0) result.add(OM.stack(entry.getKey(), amount / outputCount));
-        }
-        return result;
-    }
-
-    private static boolean accumulate(Map<OreDictMaterial, Long> totals, OreDictItemData data, int sign) {
-        for (OreDictMaterialStack component : data.getAllMaterialStacks()) {
-            if (component == null || component.mMaterial == null) return false;
-            // GT6 includes Empty:-1 as a nonphysical placeholder in some
-            // material lists. It must not contribute to conserved mass.
-            if (component.mMaterial == MT.Empty && component.mAmount == -1) continue;
-            if (component.mAmount < 0) return false;
-            Long old = totals.get(component.mMaterial);
-            long previous = old == null ? 0 : old;
-            long delta = sign * component.mAmount;
-            long next = previous + delta;
-            if ((delta > 0 && next < previous) || (delta < 0 && next > previous)) return false;
-            totals.put(component.mMaterial, next);
-        }
-        return true;
-    }
 }
