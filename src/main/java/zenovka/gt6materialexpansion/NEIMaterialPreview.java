@@ -30,6 +30,16 @@ public final class NEIMaterialPreview extends NEI_RecipeMap {
         replaced += replaceCrafting(GuiCraftingRecipe.serialCraftingHandlers, replacement);
         replaced += replaceUsage(GuiUsageRecipe.usagehandlers, replacement);
         replaced += replaceUsage(GuiUsageRecipe.serialUsageHandlers, replacement);
+        if (replaced == 0) {
+            for (ICraftingHandler handler : GuiCraftingRecipe.craftinghandlers) {
+                if (handler != null) FMLLog.info("[GT6MaterialExpansion] NEI crafting handler: id=%s class=%s",
+                        handler.getHandlerId(), handler.getClass().getName());
+            }
+            for (IUsageHandler handler : GuiUsageRecipe.usagehandlers) {
+                if (handler != null) FMLLog.info("[GT6MaterialExpansion] NEI usage handler: id=%s class=%s",
+                        handler.getHandlerId(), handler.getClass().getName());
+            }
+        }
         FMLLog.info("[GT6MaterialExpansion] Mixer NEI handler replacements: " + replaced
                 + " (crafting=" + GuiCraftingRecipe.craftinghandlers.size()
                 + ", serialCrafting=" + GuiCraftingRecipe.serialCraftingHandlers.size()
