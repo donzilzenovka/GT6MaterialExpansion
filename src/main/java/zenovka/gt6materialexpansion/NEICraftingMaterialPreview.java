@@ -54,6 +54,7 @@ public final class NEICraftingMaterialPreview extends ShapedRecipeHandler {
             cached.result = new PositionedStack(preview, 119, 24);
         }
         cached.computeVisuals();
+        decorateInputs(cached);
         arecipes.add(cached);
     }
 
@@ -105,10 +106,31 @@ public final class NEICraftingMaterialPreview extends ShapedRecipeHandler {
                 matches++;
                 if (matches > 1) break;
             }
+            decorateInputs(cached);
             if (matches != 1) continue;
             ItemStack preview = RecipePreviewTags.copyWithMaterials(
                     output, RecipeMaterialPreview.forCrafting(selected));
             cached.result = new PositionedStack(preview, 119, 24);
         }
     }
+    private void decorateInputs(CachedShapedRecipe cached) {
+        // NEI's ingredient stacks are display copies. Decorate each permutation
+        // without changing registered recipe inputs or reusable tools.
+        for (PositionedStack displayed : cached.ingredients) {
+            if (displayed == null || displayed.items == null) continue;
+            ItemStack[] copies = new ItemStack[displayed.items.length];
+            for (int i = 0; i < copies.length; i++) {
+                ItemStack input = displayed.items[i];
+                if (input == null || input.stackSize <= 0) {
+                    copies[i] = input;
+                } else {
+                    copies[i] = RecipePreviewTags.copyWithMaterials(
+                            input, MaterialDefaultResolver.resolve(input));
+                }
+            }
+            displayed.items = copies;
+            if (copies.length > 0) displayed.item = copies[0];
+        }
+    }
+
 }
