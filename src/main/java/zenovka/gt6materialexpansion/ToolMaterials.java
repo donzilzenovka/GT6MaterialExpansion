@@ -14,6 +14,11 @@ import cpw.mods.fml.common.gameevent.TickEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.Container;
+import net.minecraft.inventory.ContainerWorkbench;
+import net.minecraft.inventory.ContainerPlayer;
+import net.minecraft.inventory.Slot;
+import net.minecraft.inventory.SlotCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Item;
 import cpw.mods.fml.common.FMLLog;
@@ -85,6 +90,43 @@ public final class ToolMaterials {
         }
     }
 
+
+    /**
+     * Populate the live crafting result, without changing the recipe or GT6's
+     * existing material associations. The same resolver handles pickup.
+     * Both logical sides update their local preview; the server is authoritative.
+     */
+    @SubscribeEvent
+    public void onCraftPreview(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        Container container = event.player.openContainer;
+        if (container == null || container.inventorySlots.isEmpty()) return;
+        Object first = container.inventorySlots.get(0);
+        if (!(first instanceof SlotCrafting)) return;
+        IInventory grid;
+        if (container instanceof ContainerWorkbench) {
+            grid = ((ContainerWorkbench) container).craftMatrix;
+        } else if (container instanceof ContainerPlayer) {
+            grid = ((ContainerPlayer) container).craftMatrix;
+        } else {
+            return; // Do not guess at third-party container internals.
+        }
+        Slot outputSlot = (Slot) first;
+        ItemStack result = outputSlot.getStack();
+        if (result == null || result.getItem() == null) return;
+        if (result.getItem() instanceof MultiItemTool) return; // Existing tool path unchanged.
+        NBTTagCompound existing = result.getTagCompound();
+        if (existing != null && (existing.hasKey(RECYCLING_TAG) || existing.hasKey(ORIGINAL_TAG))) return;
+        OreDictItemData outputData = OM.anydata(result);
+        if (outputData != null && !outputData.getAllMaterialStacks().isEmpty()) return;
+
+        List<OreDictMaterialStack> components = resolveIngredients(grid, result.stackSize, false);
+        if (components == null || components.isEmpty()) return;
+        NBTTagCompound tag = existing == null ? new NBTTagCompound() : (NBTTagCompound) existing.copy();
+        OreDictMaterialStack.saveList(RECYCLING_TAG, tag, components);
+        result.setTagCompound(tag);
+        if (!event.player.worldObj.isRemote) container.detectAndSendChanges();
+    }
 
     /** Refresh player-held tools on the server; no global item registry or coremod. */
     @SubscribeEvent
