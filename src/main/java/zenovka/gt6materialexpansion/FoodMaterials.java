@@ -75,9 +75,6 @@ public final class FoodMaterials {
         assignIfMissing("minecraft:apple", apple);
         assignIfMissing("minecraft:carrot", carrot);
         assignIfMissing("minecraft:egg", egg);
-        // Loot-generated bread has no crafting history: provide a fallback.
-        // Three wheat ingredients per vanilla bread; crafted bread may override via NBT.
-        assignIfMissing("minecraft:bread", gregapi.data.MT.Wheat, 3 * CS.U);
         FMLCommonHandler.instance().bus().register(new FoodMaterials());
     }
 
@@ -108,10 +105,7 @@ public final class FoodMaterials {
         NBTTagCompound existing = output.getTagCompound();
         if (existing != null && existing.hasKey(ORIGINAL_TAG)) return output;
         OreDictItemData canonical = OreDictManager.INSTANCE.getItemData(output);
-        // Bread is a fallback-only global association. Unlike authoritative GT6
-        // compositions, it must not suppress per-recipe material inheritance.
-        boolean breadFallback = output.getItem() == net.minecraft.init.Items.bread;
-        if (!breadFallback && canonical != null && canonical.getAllMaterialStacks() != null
+        if (canonical != null && canonical.getAllMaterialStacks() != null
                 && !canonical.getAllMaterialStacks().isEmpty()) return output;
         List<OreDictMaterialStack> materials = derive(matrix, output.stackSize);
         if (materials == null || materials.isEmpty()) return output;
