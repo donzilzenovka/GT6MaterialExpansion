@@ -35,6 +35,66 @@ import java.util.Set;
  */
 public final class MaterialDefaultResolver {
     private MaterialDefaultResolver() {}
+    private static volatile Map<String, List<Recipe>> MACHINE_INDEX;
+    private static final Map<String, List<OreDictMaterialStack>> CANONICAL_CACHE =
+            new ConcurrentHashMap<String, List<OreDictMaterialStack>>();
+
+    private static String itemKey(ItemStack stack) {
+        return String.valueOf(net.minecraft.item.Item.itemRegistry.getNameForObject(stack.getItem()))
+                + ":" + stack.getItemDamage();
+    }
+
+    private static synchronized Map<String, List<Recipe>> machineIndex() {
+        if (MACHINE_INDEX != null) return MACHINE_INDEX;
+        Map<String, List<Recipe>> index = new LinkedHashMap<String, List<Recipe>>();
+        for (Recipe.RecipeMap map : Recipe.RecipeMap.RECIPE_MAP_LIST) {
+            for (Recipe recipe : map.mRecipeList) {
+                if (recipe.mOutputs == null) continue;
+                for (ItemStack output : recipe.mOutputs) {
+                    if (output == null || output.getItem() == null) continue;
+                    String key = itemKey(output);
+                    List<Recipe> recipes = index.get(key);
+                    if (recipes == null) {
+                        recipes = new ArrayList<Recipe>();
+                        index.put(key, recipes);
+                    }
+                    recipes.add(recipe);
+                }
+            }
+        }
+        MACHINE_INDEX = index;
+        FMLLog.info("[GT6MaterialExpansion] Indexed %s GT6 machine output identities", index.size());
+        return index;
+    }
+
+    private static List<OreDictMaterialStack> resolveMachine(Recipe recipe, ItemStack target,
+            Set<String> visiting, int depth) {
+        if (recipe.mInputs == null || recipe.mOutputs == null) return matter();
+        ItemStack output = null;
+        int count = 0;
+        for (ItemStack candidate : recipe.mOutputs) {
+            if (candidate != null && candidate.stackSize > 0) {
+                count++;
+                if (candidate.getItem() == target.getItem()
+                        && candidate.getItemDamage() == target.getItemDamage()) output = candidate;
+            }
+        }
+        if (count != 1 || output == null || output.stackSize <= 0) return matter();
+        Map<OreDictMaterial, Long> totals = new LinkedHashMap<OreDictMaterial, Long>();
+        for (ItemStack input : recipe.mInputs) {
+            if (input == null || input.stackSize <= 0) continue;
+            ItemStack single = input.copy();
+            single.stackSize = 1;
+            if (!add(totals, resolve(single, visiting, depth + 1), input.stackSize)) return matter();
+        }
+        List<OreDictMaterialStack> result = new ArrayList<OreDictMaterialStack>();
+        for (Map.Entry<OreDictMaterial, Long> part : totals.entrySet()) {
+            if (part.getValue() < 0 || part.getValue() % output.stackSize != 0) return matter();
+            if (part.getValue() > 0) result.add(OM.stack(part.getKey(), part.getValue() / output.stackSize));
+        }
+        return result.isEmpty() ? matter() : result;
+    }
+
     private static final Set<String> WARNED = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
     private static void warnOnce(String key, String reason) {
@@ -67,6 +127,11 @@ public final class MaterialDefaultResolver {
         String key = String.valueOf(net.minecraft.item.Item.itemRegistry.getNameForObject(stack.getItem()))
                 + ":" + stack.getItemDamage();
         if (!visiting.add(key)) return matter();
+        List<OreDictMaterialStack> cached = CANONICAL_CACHE.get(key);
+        if (cached != null) {
+            visiting.remove(key);
+            return cached;
+        }
         try {
             IRecipe selected = null;
             int craftingMatches = 0;
@@ -100,18 +165,15 @@ public final class MaterialDefaultResolver {
                     return matter();
                 }
                 if (furnaceMatches == 1) return resolve(furnaceInput, visiting, depth + 1);
-                for (Recipe.RecipeMap map : Recipe.RecipeMap.RECIPE_MAP_LIST) {
-                    for (Recipe machineRecipe : map.mRecipeList) {
-                        if (machineRecipe.mOutputs == null) continue;
-                        for (ItemStack machineOutput : machineRecipe.mOutputs) {
-                            if (machineOutput != null && machineOutput.getItem() == stack.getItem()
-                                    && machineOutput.getItemDamage() == stack.getItemDamage()) {
-                                warnOnce(key, "GT6 machine recipe in " + map.mNameInternal
-                                        + "; NEI ordering and fluid/material accounting not yet implemented");
-                                return matter();
-                            }
-                        }
-                    }
+                List<Recipe> machines = machineIndex().get(key);
+                if (machines != null && !machines.isEmpty()) {
+                    if (machines.size() > 1)
+                        warnOnce(key, "multiple machine recipes; using indexed registration order, not verified NEI order");
+                    List<OreDictMaterialStack> resolved = resolveMachine(machines.get(0), stack, visiting, depth);
+                    if (resolved != null && !resolved.isEmpty()
+                            && !(resolved.size() == 1 && resolved.get(0).mMaterial == GT6MaterialExpansion.Matter))
+                        CANONICAL_CACHE.put(key, resolved);
+                    return resolved;
                 }
                 return matter();
             }
