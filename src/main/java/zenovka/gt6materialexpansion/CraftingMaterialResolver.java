@@ -7,6 +7,7 @@ import gregapi.oredict.OreDictMaterialStack;
 import gregapi.util.OM;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,11 +33,12 @@ public final class CraftingMaterialResolver {
             single.stackSize = 1;
 
             OreDictItemData data = OM.anydata(single);
-            if (data == null || data.getAllMaterialStacks().isEmpty()) return null;
+            List<OreDictMaterialStack> inherited = inheritedMaterials(single);
+            if (inherited == null && (data == null || data.getAllMaterialStacks().isEmpty())) return null;
             // Keep each ingredient separate: a returned container must never
             // subtract material supplied by a different recipe ingredient.
             Map<OreDictMaterial, Long> consumed = new LinkedHashMap<OreDictMaterial, Long>();
-            if (!accumulate(consumed, data, 1)) {
+            if (!(inherited != null ? accumulate(consumed, inherited, 1) : accumulate(consumed, data, 1))) {
                 return null;
             }
 
@@ -84,6 +86,31 @@ public final class CraftingMaterialResolver {
             if (amount > 0) result.add(OM.stack(entry.getKey(), amount / outputCount));
         }
         return result;
+    }
+
+    /** Prefer the composition saved on this particular stack over generic item data. */
+    private static List<OreDictMaterialStack> inheritedMaterials(ItemStack stack) {
+        NBTTagCompound tag = stack.getTagCompound();
+        if (tag == null) return null;
+        String key = tag.hasKey("gt.recycling.mats") ? "gt.recycling.mats"
+            : tag.hasKey("zenovka.original.mats") ? "zenovka.original.mats" : null;
+        if (key == null) return null;
+        return OreDictMaterialStack.loadList(key, tag);
+    }
+
+    private static boolean accumulate(Map<OreDictMaterial, Long> totals, List<OreDictMaterialStack> components, int sign) {
+        for (OreDictMaterialStack component : components) {
+            if (component == null || component.mMaterial == null) return false;
+            if (component.mMaterial == MT.Empty && component.mAmount == -1) continue;
+            if (component.mAmount < 0) return false;
+            Long old = totals.get(component.mMaterial);
+            long previous = old == null ? 0 : old;
+            long delta = sign * component.mAmount;
+            long next = previous + delta;
+            if ((delta > 0 && next < previous) || (delta < 0 && next > previous)) return false;
+            totals.put(component.mMaterial, next);
+        }
+        return true;
     }
 
     private static boolean accumulate(Map<OreDictMaterial, Long> totals, OreDictItemData data, int sign) {
