@@ -1,17 +1,13 @@
 package zenovka.gt6materialexpansion;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import gregapi.data.CS;
-import gregapi.data.MT;
 import gregapi.oredict.OreDictItemData;
 import gregapi.oredict.OreDictMaterialStack;
 import gregapi.util.OM;
-import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -38,21 +34,14 @@ public final class MaterialAcquisitionHandler {
         if (data != null && data.getAllMaterialStacks() != null
                 && !data.getAllMaterialStacks().isEmpty()) return false;
 
-        List<OreDictMaterialStack> fallback = defaultMaterials(stack);
+        List<OreDictMaterialStack> fallback = MaterialDefaultResolver.resolve(stack);
         if (fallback == null || fallback.isEmpty()) return false;
         NBTTagCompound result = tag == null ? new NBTTagCompound() : (NBTTagCompound) tag.copy();
         OreDictMaterialStack.saveList(ORIGINAL, result, fallback);
         OreDictMaterialStack.saveList(RECYCLING, result, fallback);
+        result.setString("zenovka.material.origin", "canonical-first-recipe");
         stack.setTagCompound(result);
         return true;
     }
 
-    private static List<OreDictMaterialStack> defaultMaterials(ItemStack stack) {
-        // Conservative first probe: GT6 bread is produced from two 0.5 U dough.
-        // Avoid arbitrary first-recipe selection until ambiguity handling is built.
-        if (stack.getItem() != Items.bread || stack.getItemDamage() != 0) return null;
-        List<OreDictMaterialStack> result = new ArrayList<OreDictMaterialStack>(1);
-        result.add(OM.stack(MT.Wheat, CS.U));
-        return result;
-    }
 }
