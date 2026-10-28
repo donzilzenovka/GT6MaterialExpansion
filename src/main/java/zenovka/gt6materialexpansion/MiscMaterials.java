@@ -22,13 +22,14 @@ public final class MiscMaterials {
 
     public static void register(OreDictMaterial Soil, OreDictMaterial PlantMatter,
                                 OreDictMaterial Mycelium, OreDictMaterial OrganicMatter,
-                                OreDictMaterial Fibre, OreDictMaterial Wool) {
+                                OreDictMaterial Fibre, OreDictMaterial Wool,
+                                OreDictMaterial Cactus, OreDictMaterial Reed) {
         // Terrain: replace one ninth of the dirt baseline with its surface layer.
         put("minecraft:grass", 0, Soil, 8 * U, PlantMatter, U);
         put("minecraft:dirt", 2, Soil, 8 * U, PlantMatter, U); // podzol
         put("minecraft:farmland", 0, Soil, 9 * U);
         put("minecraft:Mycelium", 0, Soil, 8 * U, Mycelium, U);
-        put("minecraft:cactus", 0, PlantMatter, U);
+        put("minecraft:cactus", 0, Cactus, U);
         // Nether Wart is treated as a fungal growth, not generic vegetation.
         put("minecraft:nether_wart", 0, Mycelium, U / 4, MT.Ma, U / 8);
         put("minecraft:sponge", 0, OrganicMatter, U);
@@ -67,7 +68,7 @@ public final class MiscMaterials {
         // Preserve specific GT6 materials rather than inventing dye or slime elements.
         put("minecraft:slime_ball", 0, MT.Glue, U / 9);
         put("minecraft:magma_cream", 0, MT.Glue, U / 9, MT.Blaze, U / 9);
-        put("minecraft:reeds", 0, PlantMatter, U / 4, MT.Sugar, U / 4);
+        put("minecraft:reeds", 0, Reed, U / 4, MT.Sugar, U / 4);
         put("minecraft:dye", 3, MT.Cocoa, U);
         put("minecraft:dye", 4, MT.Lapis, U);
         put("minecraft:dye", 15, MT.Bone, U);
