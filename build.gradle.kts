@@ -24,6 +24,8 @@ repositories {
 // This dependency is compile-only: GT6 must already be installed in the game.
 dependencies {
     compileOnly(rfg.deobf(files("libs/gregtech_1.7.10-6.17.06.jar")))
+    // Match the installed NEI 2.8.170 jar; only needed to compile the optional client integration.
+    compileOnly(rfg.deobf(files("libs/NotEnoughItems-2.8.170.jar")))
 }
 
 tasks.withType<JavaCompile>().configureEach {
