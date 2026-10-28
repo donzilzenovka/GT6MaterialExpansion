@@ -231,6 +231,7 @@ public final class GT6MaterialExpansion {
         assignIfMissing("BiomesOPlenty:newBopDirt", 4, MT.STONES.Siltstone, 9 * U);
         assignIfMissing("BiomesOPlenty:newBopGrass", 0, Loam, 9 * U);
         assignIfMissing("BiomesOPlenty:mud", 0, Soil, 9 * U);
+        ProduceItemAssociations.register();
         FloraMaterials.register(PlantMatter);
         FungalMaterials.register(Mycelium);
         MiscMaterials.register(Soil, PlantMatter, Mycelium, OrganicMatter, Fibre, Wool,
