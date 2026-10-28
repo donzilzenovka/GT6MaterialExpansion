@@ -61,13 +61,10 @@ public final class NEIMaterialPreview extends NEI_RecipeMap {
             NBTTagCompound originalTag = original.getTagCompound();
             hasExisting = originalTag.hasKey("gt.recycling.mats") || originalTag.hasKey("zenovka.original.mats");
         }
-        if (!hasExisting && parts != null && !parts.isEmpty() && !((CachedDefaultRecipe) arecipes.get(recipeIndex)).mOutputs.isEmpty()) {
+        if (!hasExisting && parts != null && !parts.isEmpty()
+                && !((CachedDefaultRecipe) arecipes.get(recipeIndex)).mOutputs.isEmpty()) {
             codechicken.nei.PositionedStack displayed = ((CachedDefaultRecipe) arecipes.get(recipeIndex)).mOutputs.get(0);
-            ItemStack preview = recipe.mOutputs[0].copy();
-            NBTTagCompound tag = preview.getTagCompound();
-            if (tag == null) tag = new NBTTagCompound();
-            OreDictMaterialStack.saveList("gt.recycling.mats", tag, parts);
-            preview.setTagCompound(tag);
+            ItemStack preview = RecipePreviewTags.copyWithMaterials(original, parts);
             displayed.items = new ItemStack[] {preview};
             displayed.item = preview;
         }
