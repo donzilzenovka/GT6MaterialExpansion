@@ -61,6 +61,7 @@ public final class GT6MaterialExpansion {
         } finally {
             if (config.hasChanged()) config.save();
         }
+        ProduceMaterials.register();
         Loam = OreDictMaterial.createMaterial(32011, "Loam", "Loam");
         Soil = OreDictMaterial.createMaterial(32013, "Soil", "Soil");
         PlantMatter = OreDictMaterial.createMaterial(32026, "PlantMatter", "Plant Matter");
@@ -232,7 +233,8 @@ public final class GT6MaterialExpansion {
         assignIfMissing("BiomesOPlenty:mud", 0, Soil, 9 * U);
         FloraMaterials.register(PlantMatter);
         FungalMaterials.register(Mycelium);
-        MiscMaterials.register(Soil, PlantMatter, Mycelium, OrganicMatter, Fibre, Wool);
+        MiscMaterials.register(Soil, PlantMatter, Mycelium, OrganicMatter, Fibre, Wool,
+            ProduceMaterials.get("Cactus"), ProduceMaterials.get("Reed"));
         BiologicalFibreMaterials.register(Keratin, Silk, Chitin, Cotton, Hemp, Flax, Fibre, Wool, stringIsCotton);
         // Vanilla torches are invariant, fuel-agnostic objects; no per-stack NBT.
         // Respect any composition another mod may have registered.
