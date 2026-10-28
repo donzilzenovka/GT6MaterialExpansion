@@ -150,7 +150,6 @@ public final class MaterialDefaultResolver {
                 }
                 return result.isEmpty() ? matter() : result;
             }
-            return matter();
         } finally {
             visiting.remove(key);
         }
