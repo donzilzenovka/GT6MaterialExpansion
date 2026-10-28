@@ -32,10 +32,7 @@ public final class CraftingMaterialResolver {
             single.stackSize = 1;
 
             OreDictItemData data = OM.anydata(single);
-            if (data == null || data.getAllMaterialStacks().isEmpty()) {
-                
-                return null;
-            }
+            if (data == null || data.getAllMaterialStacks().isEmpty()) return null;
             // Keep each ingredient separate: a returned container must never
             // subtract material supplied by a different recipe ingredient.
             Map<OreDictMaterial, Long> consumed = new LinkedHashMap<OreDictMaterial, Long>();
@@ -48,8 +45,6 @@ public final class CraftingMaterialResolver {
                 if (returned != null) {
                     OreDictItemData returnedData = OM.anydata(returned);
                     if (returnedData != null && !returnedData.getAllMaterialStacks().isEmpty()) {
-                        // Some filled containers (notably GT6 Heavy Cream) describe
-                        // their contents only; their glass is not in the input data.
                         // Subtract a returned container only when its entire
                         // composition is actually included in this ingredient.
                         boolean represented = true;
