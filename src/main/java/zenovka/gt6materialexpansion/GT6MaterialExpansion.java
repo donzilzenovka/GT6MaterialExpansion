@@ -5,6 +5,7 @@ import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
+import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLServerStartedEvent;
 import gregapi.data.CS;
 import gregapi.data.MT;
@@ -285,6 +286,18 @@ public final class GT6MaterialExpansion {
         overrideMeatItem("minecraft:cooked_fished", 0, CodCooked);
         overrideMeatItem("minecraft:fish", 1, SalmonRaw);
         overrideMeatItem("minecraft:cooked_fished", 1, SalmonCooked);
+    }
+
+    @EventHandler
+    public void loadComplete(FMLLoadCompleteEvent event) {
+        if (event.getSide().isClient() && Loader.isModLoaded("NotEnoughItems")) {
+            try {
+                Class.forName("zenovka.gt6materialexpansion.NEICraftingMaterialPreview")
+                    .getMethod("install").invoke(null);
+            } catch (Throwable error) {
+                FMLLog.warning("[GT6MaterialExpansion] NEI crafting material integration failed: %s", error);
+            }
+        }
     }
 
     private static void configureMeat(OreDictMaterial raw, OreDictMaterial cooked,
