@@ -58,10 +58,12 @@ public final class NEIIngredientDecorator implements ICraftingHandler, IUsageHan
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         int count = 0;
+        count += wrapCrafting(GuiCraftingRecipe.craftinghandlers);
+        count += wrapCrafting(GuiCraftingRecipe.serialCraftingHandlers);
         count += wrapUsage(GuiUsageRecipe.usagehandlers);
         count += wrapUsage(GuiUsageRecipe.serialUsageHandlers);
         if (count > 0) {
-            FMLLog.info("[GT6MaterialExpansion][nei-ingredients] Wrapped %d late NEI usage handler registrations", count);
+            FMLLog.info("[GT6MaterialExpansion][nei-ingredients] Wrapped %d late NEI crafting/usage handler registrations", count);
         }
     }
 
