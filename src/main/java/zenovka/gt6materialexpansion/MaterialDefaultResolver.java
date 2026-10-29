@@ -185,6 +185,52 @@ public final class MaterialDefaultResolver {
         }
     }
 
+
+    private static List<OreDictMaterialStack> resolveAlloy(ItemStack target, Set<String> visiting, int depth) {
+        if (!cpw.mods.fml.common.Loader.isModLoaded("EnderIO")) return null;
+        try {
+            Class<?> managerClass = Class.forName("crazypants.enderio.machine.alloy.AlloyRecipeManager");
+            Object manager = managerClass.getMethod("getInstance").invoke(null);
+            Object raw = managerClass.getMethod("getRecipes").invoke(manager);
+            if (!(raw instanceof Iterable)) return null;
+            List<OreDictMaterialStack> selected = null;
+            for (Object recipe : (Iterable<?>) raw) {
+                Object[] outputs = (Object[]) recipe.getClass().getMethod("getOutputs").invoke(recipe);
+                if (outputs == null || outputs.length != 1 || outputs[0] == null) continue;
+                ItemStack output = (ItemStack) outputs[0].getClass().getMethod("getOutput").invoke(outputs[0]);
+                if (output == null || output.stackSize <= 0 || output.getItem() != target.getItem()
+                        || output.getItemDamage() != target.getItemDamage()) continue;
+                Object[] inputs = (Object[]) recipe.getClass().getMethod("getInputs").invoke(recipe);
+                if (inputs == null || inputs.length == 0) return matter();
+                Map<OreDictMaterial, Long> totals = new LinkedHashMap<OreDictMaterial, Long>();
+                for (Object input : inputs) {
+                    if (input == null || Boolean.TRUE.equals(input.getClass().getMethod("isFluid").invoke(input)))
+                        return matter();
+                    ItemStack ingredient = (ItemStack) input.getClass().getMethod("getInput").invoke(input);
+                    if (ingredient == null || ingredient.stackSize <= 0) return matter();
+                    ItemStack one = ingredient.copy();
+                    one.stackSize = 1;
+                    if (!add(totals, resolve(one, visiting, depth + 1), ingredient.stackSize))
+                        return matter();
+                }
+                List<OreDictMaterialStack> parts = new ArrayList<OreDictMaterialStack>();
+                for (Map.Entry<OreDictMaterial, Long> entry : totals.entrySet()) {
+                    if (entry.getValue() < 0 || entry.getValue() % output.stackSize != 0)
+                        return matter();
+                    if (entry.getValue() > 0)
+                        parts.add(OM.stack(entry.getKey(), entry.getValue() / output.stackSize));
+                }
+                if (parts.isEmpty() || isMatter(parts)) return matter();
+                if (selected != null && !sameMaterials(selected, parts)) return matter();
+                selected = parts;
+            }
+            return selected;
+        } catch (ReflectiveOperationException | ClassCastException ex) {
+            warnOnce(itemKey(target), "Ender IO alloy lookup failed: " + ex.getClass().getSimpleName());
+            return null;
+        }
+    }
+
     private static boolean traceTarget(ItemStack stack) {
         String key = itemKey(stack);
         return key.equals("EnderIO:blockEndermanSkull:2")
@@ -263,6 +309,11 @@ public final class MaterialDefaultResolver {
             return cached;
         }
         try {
+            List<OreDictMaterialStack> alloy = resolveAlloy(stack, visiting, depth);
+            if (alloy != null) {
+                if (!isMatter(alloy)) CANONICAL_CACHE.put(key, alloy);
+                return alloy;
+            }
             // Prefer the machine's own recipe over unrelated crafting/GT6 paths.
             List<OreDictMaterialStack> sliced = resolveSlice(stack, visiting, depth);
             if (sliced != null) {
