@@ -3,6 +3,9 @@ package zenovka.gt6materialexpansion;
 import codechicken.nei.PositionedStack;
 import codechicken.nei.recipe.GuiCraftingRecipe;
 import codechicken.nei.recipe.ICraftingHandler;
+import codechicken.nei.recipe.GuiUsageRecipe;
+import codechicken.nei.recipe.IUsageHandler;
+import codechicken.nei.NEIClientUtils;
 import codechicken.nei.recipe.ShapelessRecipeHandler;
 import codechicken.nei.NEIServerUtils;
 import net.minecraft.item.crafting.ShapelessRecipes;
@@ -28,6 +31,8 @@ public final class NEICraftingMaterialPreview extends ShapelessRecipeHandler {
     public static void install() {
         replace(GuiCraftingRecipe.craftinghandlers);
         replace(GuiCraftingRecipe.serialCraftingHandlers);
+        replaceUsage(GuiUsageRecipe.usagehandlers);
+        replaceUsage(GuiUsageRecipe.serialUsageHandlers);
     }
 
     private static void replace(List<ICraftingHandler> handlers) {
@@ -49,9 +54,34 @@ public final class NEICraftingMaterialPreview extends ShapelessRecipeHandler {
         }
     }
 
+    private static void replaceUsage(List<IUsageHandler> handlers) {
+        synchronized (handlers) {
+            for (int i = 0; i < handlers.size(); i++) {
+                IUsageHandler handler = handlers.get(i);
+                if (handler != null && handler.getClass() == codechicken.nei.recipe.ShapedRecipeHandler.class)
+                    handlers.set(i, new NEICraftingMaterialPreview());
+            }
+            for (int i = handlers.size() - 1; i >= 0; i--) {
+                IUsageHandler handler = handlers.get(i);
+                if (handler != null && handler.getClass() == ShapelessRecipeHandler.class)
+                    handlers.remove(i);
+            }
+        }
+    }
+
+    @Override
+    public String getHandlerId() {
+        return codechicken.nei.recipe.ShapedRecipeHandler.class.getName();
+    }
+
+    @Override
+    public String getRecipeTabName() {
+        return getRecipeName();
+    }
+
     @Override
     public String getRecipeName() {
-        return "Crafting";
+        return NEIClientUtils.translate("recipe.shaped");
     }
 
     private void append(IRecipe recipe) {
