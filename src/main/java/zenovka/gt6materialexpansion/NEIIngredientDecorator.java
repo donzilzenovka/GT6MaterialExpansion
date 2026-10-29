@@ -243,12 +243,32 @@ public final class NEIIngredientDecorator implements ICraftingHandler, IUsageHan
         if (output == null || output.item == null) return output;
         String type = delegate.getClass().getName().toLowerCase(java.util.Locale.ROOT);
         String id = delegate.getHandlerId();
-        if (!type.contains("slice") && (id == null || !id.toLowerCase(java.util.Locale.ROOT).contains("slice")))
+        String descriptor = type + " " + (id == null ? "" : id.toLowerCase(java.util.Locale.ROOT));
+        if (descriptor.contains("alloy")) {
+            // NEI's displayed ingredient counts represent a recipe operation.
+            // Only accept deterministic inputs: no cycling ore-dictionary variants.
+            List<PositionedStack> ingredients = delegate.getIngredientStacks(recipe);
+            if (ingredients == null || ingredients.isEmpty()) return output;
+            java.util.ArrayList<ItemStack> consumed = new java.util.ArrayList<ItemStack>();
+            for (PositionedStack ingredient : ingredients) {
+                if (ingredient == null || ingredient.items == null || ingredient.items.length != 1
+                        || ingredient.items[0] == null || ingredient.items[0].stackSize <= 0)
+                    return output;
+                consumed.add(ingredient.items[0].copy());
+            }
+            List<gregapi.oredict.OreDictMaterialStack> materials = AlloySmelterMaterials.calculate(
+                    consumed.toArray(new ItemStack[consumed.size()]), output.item);
+            if (materials == null) return output;
+            ItemStack preview = RecipePreviewTags.copyWithMaterials(output.item, materials);
+            if (preview != null && !ItemStack.areItemStackTagsEqual(output.item, preview))
+                return new PositionedStack(preview, output.relx, output.rely);
             return output;
+        }
+        if (!descriptor.contains("slice")) return output;
         ItemStack resolved = RecipePreviewTags.copyWithMaterials(
                 output.item, MaterialDefaultResolver.resolve(output.item));
         // Never modify the registered Ender IO recipe's output stack.
-        if (resolved != null && !net.minecraft.item.ItemStack.areItemStackTagsEqual(output.item, resolved))
+        if (resolved != null && !ItemStack.areItemStackTagsEqual(output.item, resolved))
             return new PositionedStack(resolved, output.relx, output.rely);
         return output;
     }
