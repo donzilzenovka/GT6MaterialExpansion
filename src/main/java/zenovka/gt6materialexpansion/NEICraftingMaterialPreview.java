@@ -144,7 +144,7 @@ public final class NEICraftingMaterialPreview extends ShapelessRecipeHandler {
     @Override
     public void loadCraftingRecipes(String outputId, Object... results) {
         if ("crafting".equals(outputId) || "crafting2x2".equals(outputId)) {
-            for (Object candidate : CraftingManager.getInstance().getRecipeList()) {
+            for (Object candidate : RecipeIndex.all()) {
                 if (!(candidate instanceof IRecipe)) continue;
                 IRecipe recipe = (IRecipe) candidate;
                 if ("crafting2x2".equals(outputId)) {
@@ -163,22 +163,12 @@ public final class NEICraftingMaterialPreview extends ShapelessRecipeHandler {
 
     @Override
     public void loadCraftingRecipes(ItemStack result) {
-        for (Object candidate : CraftingManager.getInstance().getRecipeList()) {
-            if (!(candidate instanceof IRecipe)) continue;
-            IRecipe recipe = (IRecipe) candidate;
-            if (NEIServerUtils.areStacksSameTypeCrafting(recipe.getRecipeOutput(), result))
-                append(recipe);
-        }
+        for (IRecipe recipe : RecipeIndex.producing(result)) append(recipe);
     }
 
     @Override
     public void loadUsageRecipes(ItemStack ingredient) {
-        for (Object candidate : CraftingManager.getInstance().getRecipeList()) {
-            if (!(candidate instanceof IRecipe)) continue;
-            IRecipe recipe = (IRecipe) candidate;
-            // Cheap selection first: material resolution is recursive and must not
-            // run for every unrelated recipe in a large modpack.
-            if (!usesIngredient(recipe, ingredient)) continue;
+        for (IRecipe recipe : RecipeIndex.using(ingredient)) {
             int before = arecipes.size();
             append(recipe);
             if (arecipes.size() == before) continue;
@@ -230,7 +220,7 @@ public final class NEICraftingMaterialPreview extends ShapelessRecipeHandler {
             ItemStack output = cached.result.item;
             IRecipe selected = null;
             int matches = 0;
-            for (Object candidate : CraftingManager.getInstance().getRecipeList()) {
+            for (Object candidate : RecipeIndex.all()) {
                 if (!(candidate instanceof ShapedRecipes) && !(candidate instanceof ShapedOreRecipe)) continue;
                 IRecipe recipe = (IRecipe) candidate;
                 ItemStack expected = recipe.getRecipeOutput();
