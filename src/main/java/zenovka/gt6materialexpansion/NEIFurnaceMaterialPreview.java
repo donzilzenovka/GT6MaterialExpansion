@@ -22,6 +22,11 @@ import java.util.Map;
  */
 @SideOnly(Side.CLIENT)
 public final class NEIFurnaceMaterialPreview extends FurnaceRecipeHandler {
+    @Override
+    public String getHandlerId() {
+        return FurnaceRecipeHandler.class.getName();
+    }
+
     public static void install() {
         replaceCrafting(GuiCraftingRecipe.craftinghandlers);
         replaceCrafting(GuiCraftingRecipe.serialCraftingHandlers);
