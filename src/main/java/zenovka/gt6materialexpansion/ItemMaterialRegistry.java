@@ -36,6 +36,7 @@ public final class ItemMaterialRegistry {
         // Provisional Enderman head: seven units bone and two Ender Pearls (eyes).
         // Restrict this test to the base head metadata; do not affect other skull variants.
         assignEndermanHeadIfMissing();
+        registerVanillaDyes();
         ProduceItemAssociations.register();
         FloraMaterials.register(PlantMatter);
         FungalMaterials.register(Mycelium);
@@ -78,6 +79,29 @@ public final class ItemMaterialRegistry {
         overrideMeatItem("minecraft:fish", 1, SalmonRaw);
         overrideMeatItem("minecraft:cooked_fished", 1, SalmonCooked);
     }
+    /**
+     * Vanilla dye metadata follows GT6's DYE_INDEX order.
+     * Leave existing GT6 associations intact except ink sac (metadata 0),
+     * deliberately normalised to 1 U Black dye.
+     */
+    private static void registerVanillaDyes() {
+        OreDictMaterial[] colors = {
+            MT.Black, MT.Red, MT.Green, MT.Brown, MT.Blue, MT.Purple,
+            MT.Cyan, MT.LightGray, MT.Gray, MT.Pink, MT.Lime, MT.Yellow,
+            MT.LightBlue, MT.Magenta, MT.Orange, MT.White
+        };
+        for (int metadata = 0; metadata < colors.length; metadata++) {
+            ItemStack dye = new ItemStack(Items.dye, 1, metadata);
+            if (metadata == 0) {
+                boolean accepted = OreDictManager.INSTANCE.setItemData(
+                    dye, new OreDictItemData(MT.Black, U));
+                FMLLog.info("[GT6MaterialExpansion] Ink sac -> 1 U Black override accepted=%s", accepted);
+            } else if (OreDictManager.INSTANCE.getItemData(dye) == null) {
+                OreDictManager.INSTANCE.addItemData(dye, new OreDictItemData(colors[metadata], U));
+            }
+        }
+    }
+
     private static void assignEndermanHeadIfMissing() {
         Object registered = Item.itemRegistry.getObject("EnderIO:blockEndermanSkull");
         if (!(registered instanceof Item)) return;
