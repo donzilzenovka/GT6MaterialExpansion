@@ -289,8 +289,6 @@ public final class GT6MaterialExpansion {
                     .getMethod("install").invoke(null);
                 Class.forName("zenovka.gt6materialexpansion.NEICraftingMaterialPreview")
                     .getMethod("install").invoke(null);
-                Class.forName("zenovka.gt6materialexpansion.NEIShapelessMaterialPreview")
-                    .getMethod("install").invoke(null);
             } catch (Throwable error) {
                 FMLLog.warning("[GT6MaterialExpansion] NEI crafting material integration failed: %s", error);
             }
