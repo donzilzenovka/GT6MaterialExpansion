@@ -15,6 +15,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.init.Items;
 import cpw.mods.fml.common.FMLLog;
+import net.minecraftforge.common.MinecraftForge;
 
 /** Pack-aware item material associations and deliberate overrides. */
 public final class ItemMaterialRegistry {
