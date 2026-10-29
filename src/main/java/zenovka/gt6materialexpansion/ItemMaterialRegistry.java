@@ -32,7 +32,7 @@ public final class ItemMaterialRegistry {
         // Ender IO Silicon (numeric item ID may be 4321 in this pack).
         // Registry identity is EnderIO:itemMaterial, metadata 0.
         // The GT6 silicon plate alternatives each contain 1 U Silicon.
-        assignIfMissing("EnderIO:itemMaterial", 0, MT.Silicon, U);
+        assignIfMissing("EnderIO:itemMaterial", 0, MT.Si, U);
         ProduceItemAssociations.register();
         FloraMaterials.register(PlantMatter);
         FungalMaterials.register(Mycelium);
