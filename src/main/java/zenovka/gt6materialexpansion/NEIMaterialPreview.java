@@ -105,13 +105,13 @@ public final class NEIMaterialPreview extends NEI_RecipeMap {
 
     @Override
     public void loadCraftingRecipes(ItemStack output) {
-        super.loadCraftingRecipes(output);
+        super.loadCraftingRecipes(NEIRecipeLookup.identity(output));
         decorate();
     }
 
     @Override
     public void loadUsageRecipes(ItemStack input) {
-        super.loadUsageRecipes(input);
+        super.loadUsageRecipes(NEIRecipeLookup.identity(input));
         decorate();
     }
 
