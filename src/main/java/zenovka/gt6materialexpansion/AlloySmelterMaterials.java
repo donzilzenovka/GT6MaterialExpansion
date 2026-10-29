@@ -1,6 +1,5 @@
 package zenovka.gt6materialexpansion;
 
-import gregapi.data.CS;
 import gregapi.data.MT;
 import gregapi.oredict.OreDictMaterial;
 import gregapi.oredict.OreDictMaterialStack;
@@ -45,10 +44,10 @@ public final class AlloySmelterMaterials {
             List<OreDictMaterialStack> parts = MaterialDefaultResolver.resolve(one);
             if (parts == null || parts.isEmpty()) return null;
             for (OreDictMaterialStack part : parts) {
-                if (part == null || part.mMaterial == null
-                        || part.mMaterial == GT6MaterialExpansion.Matter
-                        || part.mAmount < 0) return null;
+                if (part == null || part.mMaterial == null) return null;
                 if (part.mMaterial == MT.Empty && part.mAmount == -1) continue;
+                if (part.mMaterial == GT6MaterialExpansion.Matter
+                        || part.mAmount < 0) return null;
                 long quantity = part.mAmount;
                 if (quantity != 0 && input.stackSize > Long.MAX_VALUE / quantity) return null;
                 long delta = quantity * input.stackSize;
