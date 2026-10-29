@@ -383,12 +383,24 @@ public final class MaterialDefaultResolver {
                         if (ingredient == null) continue;
                         return matter();
                     }
+                    // Some modded recipes register placeholder stacks with no Item.
+                    // Do not silently omit them: that would invent an incomplete composition.
+                    if (chosen.getItem() == null) {
+                        warnOnce(key, "invalid crafting ingredient (null Item) in "
+                                + recipe.getClass().getName() + " for " + key);
+                        return matter();
+                    }
                     List<OreDictMaterialStack> parts = resolve(chosen, visiting, depth + 1);
                     if (!add(totals, parts, 1)) return matter();
                     // Container returns must be accounted for per ingredient.
                     if (chosen.getItem().hasContainerItem(chosen)) {
                         ItemStack container = chosen.getItem().getContainerItem(chosen);
                         if (container != null) {
+                            if (container.getItem() == null) {
+                                warnOnce(key, "invalid crafting container (null Item) in "
+                                        + recipe.getClass().getName() + " for " + key);
+                                return matter();
+                            }
                             List<OreDictMaterialStack> returned = resolve(container, visiting, depth + 1);
                             if (!add(totals, returned, -1)) return matter();
                         }
