@@ -27,11 +27,23 @@ public final class NEIFurnaceMaterialPreview extends FurnaceRecipeHandler {
         return FurnaceRecipeHandler.class.getName();
     }
 
+    private static boolean isBakedPotato(ItemStack stack) {
+        return stack != null && stack.getItem() == net.minecraft.init.Items.baked_potato;
+    }
+
     public static void install() {
+        int count = 0;
+        for (ICraftingHandler handler : GuiCraftingRecipe.craftinghandlers)
+            if (handler instanceof FurnaceRecipeHandler) count++;
+        FMLLog.info("[GT6MaterialExpansion][nei-furnace] before install furnace crafting handlers=%d", count);
         replaceCrafting(GuiCraftingRecipe.craftinghandlers);
         replaceCrafting(GuiCraftingRecipe.serialCraftingHandlers);
         replaceUsage(GuiUsageRecipe.usagehandlers);
         replaceUsage(GuiUsageRecipe.serialUsageHandlers);
+        int count = 0;
+        for (ICraftingHandler handler : GuiCraftingRecipe.craftinghandlers)
+            if (handler instanceof NEIFurnaceMaterialPreview) count++;
+        FMLLog.info("[GT6MaterialExpansion][nei-furnace] after install decorated crafting handlers=%d", count);
     }
 
     private static void replaceCrafting(List<ICraftingHandler> handlers) {
@@ -64,7 +76,12 @@ public final class NEIFurnaceMaterialPreview extends FurnaceRecipeHandler {
 
     @Override
     public void loadCraftingRecipes(ItemStack result) {
+        if (isBakedPotato(result))
+            FMLLog.info("[GT6MaterialExpansion][nei-furnace] baked potato lookup invoked metadata=%d nbt=%s handler=%s",
+                    result.getItemDamage(), result.getTagCompound(), getHandlerId());
         super.loadCraftingRecipes(result);
+        if (isBakedPotato(result))
+            FMLLog.info("[GT6MaterialExpansion][nei-furnace] baked potato matches before decoration=%d", arecipes.size());
         decorate();
     }
 
