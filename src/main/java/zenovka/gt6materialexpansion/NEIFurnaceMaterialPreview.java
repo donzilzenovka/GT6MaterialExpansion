@@ -40,10 +40,10 @@ public final class NEIFurnaceMaterialPreview extends FurnaceRecipeHandler {
         replaceCrafting(GuiCraftingRecipe.serialCraftingHandlers);
         replaceUsage(GuiUsageRecipe.usagehandlers);
         replaceUsage(GuiUsageRecipe.serialUsageHandlers);
-        int count = 0;
+        int decoratedCount = 0;
         for (ICraftingHandler handler : GuiCraftingRecipe.craftinghandlers)
-            if (handler instanceof NEIFurnaceMaterialPreview) count++;
-        FMLLog.info("[GT6MaterialExpansion][nei-furnace] after install decorated crafting handlers=%d", count);
+            if (handler instanceof NEIFurnaceMaterialPreview) decoratedCount++;
+        FMLLog.info("[GT6MaterialExpansion][nei-furnace] after install decorated crafting handlers=%d", decoratedCount);
     }
 
     private static void replaceCrafting(List<ICraftingHandler> handlers) {
