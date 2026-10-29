@@ -38,7 +38,9 @@ public final class NEIIngredientDecorator implements ICraftingHandler, IUsageHan
 
     private static boolean eligible(IRecipeHandler handler) {
         return handler != null && !(handler instanceof NEIIngredientDecorator)
-                && handler.getClass().getName().toLowerCase(java.util.Locale.ROOT).contains("enderio");
+                && !(handler instanceof NEIMaterialPreview)
+                && !(handler instanceof NEICraftingMaterialPreview)
+                && !(handler instanceof NEIFurnaceMaterialPreview);
     }
 
     private static boolean registered;
@@ -49,20 +51,18 @@ public final class NEIIngredientDecorator implements ICraftingHandler, IUsageHan
         if (registered) return;
         registered = true;
         FMLCommonHandler.instance().bus().register(new NEIIngredientDecorator(null));
-        FMLLog.info("[GT6MaterialExpansion][nei-ingredients] Waiting for Ender IO NEI handlers");
+        FMLLog.info("[GT6MaterialExpansion][nei-ingredients] Waiting for NEI usage handlers");
     }
 
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (foundHandlers || event.phase != TickEvent.Phase.END) return;
         int count = 0;
-        count += wrapCrafting(GuiCraftingRecipe.craftinghandlers);
-        count += wrapCrafting(GuiCraftingRecipe.serialCraftingHandlers);
         count += wrapUsage(GuiUsageRecipe.usagehandlers);
         count += wrapUsage(GuiUsageRecipe.serialUsageHandlers);
         if (count > 0) {
             foundHandlers = true;
-            FMLLog.info("[GT6MaterialExpansion][nei-ingredients] Wrapped %d late Ender IO handler registrations", count);
+            FMLLog.info("[GT6MaterialExpansion][nei-ingredients] Wrapped %d late NEI usage handler registrations", count);
         }
     }
 
@@ -118,14 +118,39 @@ public final class NEIIngredientDecorator implements ICraftingHandler, IUsageHan
     }
 
     @Override public IUsageHandler getUsageHandler(String id, Object... args) {
-        if (!(delegate instanceof IUsageHandler)) return this;
-        IUsageHandler selected = ((IUsageHandler) delegate).getUsageHandler(id, normalized(args));
-        return selected == null ? null : new NEIIngredientDecorator(selected);
+        return selectUsage(id, args, false);
     }
 
     @Override public IUsageHandler getUsageAndCatalystHandler(String id, Object... args) {
-        if (!(delegate instanceof IUsageHandler)) return this;
-        IUsageHandler selected = ((IUsageHandler) delegate).getUsageAndCatalystHandler(id, normalized(args));
+        return selectUsage(id, args, true);
+    }
+
+    private IUsageHandler selectUsage(String id, Object[] args, boolean catalyst) {
+        if (!(delegate instanceof IUsageHandler)) return null;
+        IUsageHandler handler = (IUsageHandler) delegate;
+        Object[] original = normalized(args);
+        Object[] enriched = original.clone();
+        boolean changed = false;
+        if ("item".equals(id)) {
+            for (int i = 0; i < enriched.length; i++) {
+                if (!(enriched[i] instanceof ItemStack)) continue;
+                ItemStack item = (ItemStack) enriched[i];
+                if (item.getItem() == null) continue;
+                ItemStack resolved = RecipePreviewTags.copyWithMaterials(
+                        item, MaterialDefaultResolver.resolve(item));
+                if (resolved != null && !net.minecraft.item.ItemStack.areItemStackTagsEqual(item, resolved)) {
+                    enriched[i] = resolved;
+                    changed = true;
+                }
+            }
+        }
+        IUsageHandler selected = catalyst
+                ? handler.getUsageAndCatalystHandler(id, enriched)
+                : handler.getUsageHandler(id, enriched);
+        if (changed && (selected == null || selected.numRecipes() == 0)) {
+            selected = catalyst ? handler.getUsageAndCatalystHandler(id, original)
+                    : handler.getUsageHandler(id, original);
+        }
         return selected == null ? null : new NEIIngredientDecorator(selected);
     }
 
