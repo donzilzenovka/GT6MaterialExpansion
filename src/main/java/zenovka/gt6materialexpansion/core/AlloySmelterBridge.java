@@ -93,7 +93,7 @@ public final class AlloySmelterBridge {
             return;
         }
         ItemStack tagged = RecipePreviewTags.copyWithMaterials(output, composition);
-        field(result.getClass(), "item").set(result, tagged);
+        output.setTagCompound(tagged.getTagCompound());
         System.out.println("[GT6MaterialExpansion/Alloy] Tagged " + tagged.stackSize
                 + " output items from " + items.size() + " consumed ingredient stacks.");
     }
