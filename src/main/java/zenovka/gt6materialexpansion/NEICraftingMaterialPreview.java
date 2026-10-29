@@ -3,7 +3,10 @@ package zenovka.gt6materialexpansion;
 import codechicken.nei.PositionedStack;
 import codechicken.nei.recipe.GuiCraftingRecipe;
 import codechicken.nei.recipe.ICraftingHandler;
-import codechicken.nei.recipe.ShapedRecipeHandler;
+import codechicken.nei.recipe.ShapelessRecipeHandler;
+import codechicken.nei.NEIServerUtils;
+import net.minecraft.item.crafting.ShapelessRecipes;
+import net.minecraftforge.oredict.ShapelessOreRecipe;
 import cpw.mods.fml.common.FMLLog;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -21,7 +24,7 @@ import java.util.List;
  * identifier and original GUI; only decorates copied output stacks.
  */
 @SideOnly(Side.CLIENT)
-public final class NEICraftingMaterialPreview extends ShapedRecipeHandler {
+public final class NEICraftingMaterialPreview extends ShapelessRecipeHandler {
     public static void install() {
         replace(GuiCraftingRecipe.craftinghandlers);
         replace(GuiCraftingRecipe.serialCraftingHandlers);
@@ -31,15 +34,31 @@ public final class NEICraftingMaterialPreview extends ShapedRecipeHandler {
         synchronized (handlers) {
             for (int i = 0; i < handlers.size(); i++) {
                 ICraftingHandler handler = handlers.get(i);
-                if (handler != null && handler.getClass() == ShapedRecipeHandler.class) {
+                if (handler != null && handler.getClass() == codechicken.nei.recipe.ShapedRecipeHandler.class) {
                     handlers.set(i, new NEICraftingMaterialPreview());
                     FMLLog.info("[GT6MaterialExpansion] Decorated existing NEI shaped crafting handler");
+                }
+            }
+            for (int i = handlers.size() - 1; i >= 0; i--) {
+                ICraftingHandler handler = handlers.get(i);
+                if (handler != null && handler.getClass() == ShapelessRecipeHandler.class) {
+                    handlers.remove(i);
+                    FMLLog.info("[GT6MaterialExpansion] Merged NEI shapeless crafting into Crafting");
                 }
             }
         }
     }
 
+    @Override
+    public String getRecipeName() {
+        return "Crafting";
+    }
+
     private void append(IRecipe recipe) {
+        if (recipe instanceof ShapelessRecipes || recipe instanceof ShapelessOreRecipe) {
+            appendShapeless(recipe);
+            return;
+        }
         CachedShapedRecipe cached;
         if (recipe instanceof ShapedRecipes) {
             cached = new CachedShapedRecipe((ShapedRecipes) recipe);
@@ -58,6 +77,40 @@ public final class NEICraftingMaterialPreview extends ShapedRecipeHandler {
         arecipes.add(cached);
     }
 
+    private void appendShapeless(IRecipe recipe) {
+        try {
+            CachedShapelessRecipe cached;
+            if (recipe instanceof ShapelessRecipes) {
+                ShapelessRecipes vanilla = (ShapelessRecipes) recipe;
+                if (vanilla.recipeItems == null) return;
+                cached = new CachedShapelessRecipe(vanilla.recipeItems, recipe.getRecipeOutput());
+            } else if (recipe instanceof ShapelessOreRecipe) {
+                List<?> ingredients = ((ShapelessOreRecipe) recipe).getInput();
+                for (Object ingredient : ingredients)
+                    if (ingredient instanceof List && ((List<?>) ingredient).isEmpty()) return;
+                cached = new CachedShapelessRecipe(ingredients, recipe.getRecipeOutput());
+            } else return;
+            if (recipe.getRecipeOutput() == null) return;
+            cached.setResult(RecipePreviewTags.copyWithMaterials(
+                    recipe.getRecipeOutput(), RecipeMaterialPreview.forCrafting(recipe)));
+            for (PositionedStack displayed : cached.ingredients) {
+                if (displayed == null || displayed.items == null) continue;
+                ItemStack[] copies = new ItemStack[displayed.items.length];
+                for (int i = 0; i < copies.length; i++) {
+                    ItemStack input = displayed.items[i];
+                    copies[i] = input == null || input.getItem() == null || input.stackSize <= 0
+                            ? input : RecipePreviewTags.copyWithMaterials(
+                                    input, MaterialDefaultResolver.resolve(input));
+                }
+                displayed.items = copies;
+                if (copies.length > 0) displayed.item = copies[0];
+            }
+            arecipes.add(cached);
+        } catch (RuntimeException e) {
+            FMLLog.warning("[GT6MaterialExpansion] Could not preview shapeless recipe: %s", e);
+        }
+    }
+
     @Override
     public void loadCraftingRecipes(String outputId, Object... results) {
         if ("crafting".equals(outputId) || "crafting2x2".equals(outputId)) {
@@ -65,9 +118,13 @@ public final class NEICraftingMaterialPreview extends ShapedRecipeHandler {
                 if (!(candidate instanceof IRecipe)) continue;
                 IRecipe recipe = (IRecipe) candidate;
                 if ("crafting2x2".equals(outputId)) {
-                    if (!(recipe instanceof ShapedRecipes)) continue;
-                    ShapedRecipes shaped = (ShapedRecipes) recipe;
-                    if (shaped.recipeWidth > 2 || shaped.recipeHeight > 2) continue;
+                    if (recipe instanceof ShapedRecipes) {
+                        ShapedRecipes shaped = (ShapedRecipes) recipe;
+                        if (shaped.recipeWidth > 2 || shaped.recipeHeight > 2) continue;
+                    } else if (recipe instanceof net.minecraftforge.oredict.ShapedOreRecipe
+                            || recipe instanceof ShapelessRecipes || recipe instanceof ShapelessOreRecipe) {
+                        if (recipe.getRecipeSize() > 4) continue;
+                    } else continue;
                 }
                 append(recipe);
             }
@@ -76,14 +133,29 @@ public final class NEICraftingMaterialPreview extends ShapedRecipeHandler {
 
     @Override
     public void loadCraftingRecipes(ItemStack result) {
-        super.loadCraftingRecipes(result);
-        decorateMatching();
+        for (Object candidate : CraftingManager.getInstance().getRecipeList()) {
+            if (!(candidate instanceof IRecipe)) continue;
+            IRecipe recipe = (IRecipe) candidate;
+            if (NEIServerUtils.areStacksSameTypeCrafting(recipe.getRecipeOutput(), result))
+                append(recipe);
+        }
     }
 
     @Override
     public void loadUsageRecipes(ItemStack ingredient) {
-        super.loadUsageRecipes(ingredient);
-        decorateMatching();
+        for (Object candidate : CraftingManager.getInstance().getRecipeList()) {
+            if (!(candidate instanceof IRecipe)) continue;
+            IRecipe recipe = (IRecipe) candidate;
+            int before = arecipes.size();
+            append(recipe);
+            if (arecipes.size() == before) continue;
+            CachedRecipe cached = arecipes.get(arecipes.size() - 1);
+            if (!cached.contains(cached.getIngredients(), ingredient)) {
+                arecipes.remove(arecipes.size() - 1);
+            } else {
+                cached.setIngredientPermutation(cached.getIngredients(), ingredient);
+            }
+        }
     }
 
     private void decorateMatching() {
