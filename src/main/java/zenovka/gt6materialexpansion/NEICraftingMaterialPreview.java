@@ -176,16 +176,48 @@ public final class NEICraftingMaterialPreview extends ShapelessRecipeHandler {
         for (Object candidate : CraftingManager.getInstance().getRecipeList()) {
             if (!(candidate instanceof IRecipe)) continue;
             IRecipe recipe = (IRecipe) candidate;
+            // Cheap selection first: material resolution is recursive and must not
+            // run for every unrelated recipe in a large modpack.
+            if (!usesIngredient(recipe, ingredient)) continue;
             int before = arecipes.size();
             append(recipe);
             if (arecipes.size() == before) continue;
             CachedRecipe cached = arecipes.get(arecipes.size() - 1);
-            if (!cached.contains(cached.getIngredients(), ingredient)) {
-                arecipes.remove(arecipes.size() - 1);
-            } else {
+            if (cached.contains(cached.getIngredients(), ingredient))
                 cached.setIngredientPermutation(cached.getIngredients(), ingredient);
-            }
+            else
+                arecipes.remove(arecipes.size() - 1);
         }
+    }
+
+
+    private static boolean usesIngredient(IRecipe recipe, ItemStack wanted) {
+        if (wanted == null || wanted.getItem() == null) return false;
+        Object[] inputs;
+        if (recipe instanceof ShapedRecipes)
+            inputs = ((ShapedRecipes) recipe).recipeItems;
+        else if (recipe instanceof ShapedOreRecipe)
+            inputs = ((ShapedOreRecipe) recipe).getInput();
+        else if (recipe instanceof ShapelessRecipes)
+            inputs = ((ShapelessRecipes) recipe).recipeItems.toArray();
+        else if (recipe instanceof ShapelessOreRecipe)
+            inputs = ((ShapelessOreRecipe) recipe).getInput().toArray();
+        else return false;
+        if (inputs == null) return false;
+        for (Object input : inputs) {
+            if (matchesInput(input, wanted)) return true;
+        }
+        return false;
+    }
+
+    private static boolean matchesInput(Object input, ItemStack wanted) {
+        if (input instanceof ItemStack)
+            return NEIServerUtils.areStacksSameTypeCrafting((ItemStack) input, wanted);
+        if (input instanceof List<?>) {
+            for (Object alternative : (List<?>) input)
+                if (matchesInput(alternative, wanted)) return true;
+        }
+        return false;
     }
 
     private void decorateMatching() {
