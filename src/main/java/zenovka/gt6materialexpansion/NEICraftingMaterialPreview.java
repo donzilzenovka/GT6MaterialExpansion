@@ -163,18 +163,18 @@ public final class NEICraftingMaterialPreview extends ShapelessRecipeHandler {
 
     @Override
     public void loadCraftingRecipes(ItemStack result) {
-        for (IRecipe recipe : RecipeIndex.producing(result)) append(recipe);
+        for (IRecipe recipe : RecipeIndex.producing(NEIRecipeLookup.identity(result))) append(recipe);
     }
 
     @Override
     public void loadUsageRecipes(ItemStack ingredient) {
-        for (IRecipe recipe : RecipeIndex.using(ingredient)) {
+        for (IRecipe recipe : RecipeIndex.using(NEIRecipeLookup.identity(ingredient))) {
             int before = arecipes.size();
             append(recipe);
             if (arecipes.size() == before) continue;
             CachedRecipe cached = arecipes.get(arecipes.size() - 1);
-            if (cached.contains(cached.getIngredients(), ingredient))
-                cached.setIngredientPermutation(cached.getIngredients(), ingredient);
+            if (cached.contains(cached.getIngredients(), NEIRecipeLookup.identity(ingredient)))
+                cached.setIngredientPermutation(cached.getIngredients(), NEIRecipeLookup.identity(ingredient));
             else
                 arecipes.remove(arecipes.size() - 1);
         }
