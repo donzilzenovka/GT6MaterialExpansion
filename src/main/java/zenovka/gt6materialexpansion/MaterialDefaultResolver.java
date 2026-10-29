@@ -140,23 +140,34 @@ public final class MaterialDefaultResolver {
                 ItemStack primary = (ItemStack) type.getMethod("getInput").invoke(input);
                 if (primary == null || primary.getItem() == null || primary.stackSize <= 0) return matter();
                 List<OreDictMaterialStack> parts = resolve(primary, visiting, depth + 1);
-                if (isMatter(parts)) return matter();
+                if (isMatter(parts)) {
+                    warnOnce(itemKey(target), "Slice'N'Splice unresolved ingredient slot " + slot
+                            + ": " + itemKey(primary));
+                    return matter();
+                }
                 Object alternatives = type.getMethod("getEquivelentInputs").invoke(input);
                 if (alternatives instanceof ItemStack[]) {
                     for (ItemStack alternative : (ItemStack[]) alternatives) {
                         if (alternative == null || alternative.getItem() == null) return matter();
                         List<OreDictMaterialStack> other = resolve(alternative, visiting, depth + 1);
                         if (!sameMaterials(parts, other)) {
-                            warnOnce(itemKey(target), "Slice'N'Splice alternatives have different material compositions");
+                            warnOnce(itemKey(target), "Slice'N'Splice alternative differs at slot " + slot
+                                    + ": " + itemKey(primary) + " versus " + itemKey(alternative));
                             return matter();
                         }
                     }
                 }
-                if (!add(totals, parts, primary.stackSize)) return matter();
+                if (!add(totals, parts, primary.stackSize)) {
+                    warnOnce(itemKey(target), "Slice'N'Splice invalid material amount at slot " + slot);
+                    return matter();
+                }
             }
             List<OreDictMaterialStack> result = new ArrayList<OreDictMaterialStack>();
             for (Map.Entry<OreDictMaterial, Long> entry : totals.entrySet()) {
-                if (entry.getValue() < 0 || entry.getValue() % output.stackSize != 0) return matter();
+                if (entry.getValue() < 0 || entry.getValue() % output.stackSize != 0) {
+                    warnOnce(itemKey(target), "Slice'N'Splice material quantities not divisible by output count");
+                    return matter();
+                }
                 if (entry.getValue() > 0)
                     result.add(OM.stack(entry.getKey(), entry.getValue() / output.stackSize));
             }
@@ -229,6 +240,12 @@ public final class MaterialDefaultResolver {
             return cached;
         }
         try {
+            // Prefer the machine's own recipe over unrelated crafting/GT6 paths.
+            List<OreDictMaterialStack> sliced = resolveSlice(stack, visiting, depth);
+            if (sliced != null) {
+                if (!isMatter(sliced)) CANONICAL_CACHE.put(key, sliced);
+                return sliced;
+            }
             IRecipe selected = null;
             int craftingMatches = 0;
             for (Object entry : CraftingManager.getInstance().getRecipeList()) {
@@ -270,11 +287,6 @@ public final class MaterialDefaultResolver {
                             && !(resolved.size() == 1 && resolved.get(0).mMaterial == GT6MaterialExpansion.Matter))
                         CANONICAL_CACHE.put(key, resolved);
                     return resolved;
-                }
-                List<OreDictMaterialStack> sliced = resolveSlice(stack, visiting, depth);
-                if (sliced != null) {
-                    if (!isMatter(sliced)) CANONICAL_CACHE.put(key, sliced);
-                    return sliced;
                 }
                 return matter();
             }
