@@ -84,6 +84,9 @@ public final class GT6MaterialExpansion {
                     .getMethod("install").invoke(null);
                 Class.forName("zenovka.gt6materialexpansion.NEIFurnaceMaterialPreview")
                     .getMethod("install").invoke(null);
+                if (Loader.isModLoaded("EnderIO"))
+                    Class.forName("zenovka.gt6materialexpansion.NEIIngredientDecorator")
+                        .getMethod("install").invoke(null);
             } catch (Throwable error) {
                 FMLLog.warning("[GT6MaterialExpansion] NEI crafting material integration failed: %s", error);
             }
