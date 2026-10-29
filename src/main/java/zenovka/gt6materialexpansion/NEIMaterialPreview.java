@@ -51,11 +51,11 @@ public final class NEIMaterialPreview extends NEI_RecipeMap {
         replaced += replaceUsage(GuiUsageRecipe.serialUsageHandlers, replacement);
         if (replaced == 0) return false;
         {
-            for (ICraftingHandler handler : GuiCraftingRecipe.craftinghandlers) {
+            for (ICraftingHandler handler : new java.util.ArrayList<ICraftingHandler>(GuiCraftingRecipe.craftinghandlers)) {
                 if (handler != null) FMLLog.info("[GT6MaterialExpansion] NEI crafting handler: id=%s class=%s",
                         handler.getHandlerId(), handler.getClass().getName());
             }
-            for (IUsageHandler handler : GuiUsageRecipe.usagehandlers) {
+            for (IUsageHandler handler : new java.util.ArrayList<IUsageHandler>(GuiUsageRecipe.usagehandlers)) {
                 if (handler != null) FMLLog.info("[GT6MaterialExpansion] NEI usage handler: id=%s class=%s",
                         handler.getHandlerId(), handler.getClass().getName());
             }
