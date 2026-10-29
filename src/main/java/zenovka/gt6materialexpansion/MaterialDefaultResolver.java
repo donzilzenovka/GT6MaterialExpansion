@@ -119,6 +119,7 @@ public final class MaterialDefaultResolver {
                 if (output != null && output.getItem() == target.getItem()
                         && output.getItemDamage() == target.getItemDamage()) matches.add(recipe);
             }
+            trace(target, "matching Slice'N'Splice recipes=" + matches.size());
             if (matches.isEmpty()) return null;
             if (matches.size() != 1) {
                 warnOnce(itemKey(target), "multiple Slice'N'Splice recipes; composition ambiguous");
@@ -130,6 +131,7 @@ public final class MaterialDefaultResolver {
             if (output == null || output.stackSize <= 0) return matter();
             Object[] inputs = (Object[]) recipe.getClass().getMethod("getInputs").invoke(recipe);
             if (inputs == null) return matter();
+            trace(target, "recipe input entries=" + inputs.length + " output count=" + output.stackSize);
             Map<OreDictMaterial, Long> totals = new LinkedHashMap<OreDictMaterial, Long>();
             for (Object input : inputs) {
                 if (input == null) continue;
@@ -140,6 +142,8 @@ public final class MaterialDefaultResolver {
                 ItemStack primary = (ItemStack) type.getMethod("getInput").invoke(input);
                 if (primary == null || primary.getItem() == null || primary.stackSize <= 0) return matter();
                 List<OreDictMaterialStack> parts = resolve(primary, visiting, depth + 1);
+                trace(target, "slot=" + slot + " primary=" + itemKey(primary)
+                        + " count=" + primary.stackSize + " materials=" + parts);
                 if (isMatter(parts)) {
                     warnOnce(itemKey(target), "Slice'N'Splice unresolved ingredient slot " + slot
                             + ": " + itemKey(primary));
@@ -150,6 +154,8 @@ public final class MaterialDefaultResolver {
                     for (ItemStack alternative : (ItemStack[]) alternatives) {
                         if (alternative == null || alternative.getItem() == null) return matter();
                         List<OreDictMaterialStack> other = resolve(alternative, visiting, depth + 1);
+                        trace(target, "slot=" + slot + " alternative=" + itemKey(alternative)
+                                + " materials=" + other);
                         if (!sameMaterials(parts, other)) {
                             warnOnce(itemKey(target), "Slice'N'Splice alternative differs at slot " + slot
                                     + ": " + itemKey(primary) + " versus " + itemKey(alternative));
@@ -171,11 +177,24 @@ public final class MaterialDefaultResolver {
                 if (entry.getValue() > 0)
                     result.add(OM.stack(entry.getKey(), entry.getValue() / output.stackSize));
             }
+            trace(target, "computed materials=" + result);
             return result.isEmpty() ? matter() : result;
         } catch (ReflectiveOperationException | ClassCastException ex) {
             warnOnce(itemKey(target), "Slice'N'Splice registry lookup failed: " + ex.getClass().getSimpleName());
             return null;
         }
+    }
+
+    private static boolean traceTarget(ItemStack stack) {
+        String key = itemKey(stack);
+        return key.equals("EnderIO:blockEndermanSkull:2")
+            || key.equals("EnderIO:itemFrankenSkull:6")
+            || key.equals("EnderIO:itemBasicCapacitor:6");
+    }
+
+    private static void trace(ItemStack target, String detail) {
+        if (traceTarget(target))
+            FMLLog.info("[GT6MaterialExpansion][slice-trace] %s %s", itemKey(target), detail);
     }
 
     private static boolean isMatter(List<OreDictMaterialStack> parts) {
@@ -226,10 +245,14 @@ public final class MaterialDefaultResolver {
             concrete.setItemDamage(0);
             return resolve(concrete, visiting, depth + 1);
         }
+        if (traceTarget(stack))
+            FMLLog.info("[GT6MaterialExpansion][slice-trace] resolve %s depth=%d", itemKey(stack), depth);
         OreDictItemData direct = OM.anydata(stack);
         if (direct != null && direct.getAllMaterialStacks() != null
-                && !direct.getAllMaterialStacks().isEmpty())
+                && !direct.getAllMaterialStacks().isEmpty()) {
+            trace(stack, "direct material=" + direct.getAllMaterialStacks());
             return direct.getAllMaterialStacks();
+        }
 
         String key = String.valueOf(net.minecraft.item.Item.itemRegistry.getNameForObject(stack.getItem()))
                 + ":" + stack.getItemDamage();
@@ -243,6 +266,7 @@ public final class MaterialDefaultResolver {
             // Prefer the machine's own recipe over unrelated crafting/GT6 paths.
             List<OreDictMaterialStack> sliced = resolveSlice(stack, visiting, depth);
             if (sliced != null) {
+                trace(stack, "Slice'N'Splice resolution=" + sliced);
                 if (!isMatter(sliced)) CANONICAL_CACHE.put(key, sliced);
                 return sliced;
             }
@@ -257,6 +281,7 @@ public final class MaterialDefaultResolver {
                 craftingMatches++;
                 selected = recipe;
             }
+            trace(stack, "crafting matches=" + craftingMatches);
             if (craftingMatches > 1) {
                 warnOnce(key, "multiple crafting recipes; NEI handler ordering not verified");
                 return matter();
@@ -273,12 +298,14 @@ public final class MaterialDefaultResolver {
                         furnaceInput = (ItemStack) entry.getKey();
                     }
                 }
+                trace(stack, "furnace matches=" + furnaceMatches);
                 if (furnaceMatches > 1) {
                     warnOnce(key, "multiple furnace recipes; NEI handler ordering not verified");
                     return matter();
                 }
                 if (furnaceMatches == 1) return resolve(furnaceInput, visiting, depth + 1);
                 List<Recipe> machines = machineIndex().get(key);
+                trace(stack, "GT6 machine matches=" + (machines == null ? 0 : machines.size()));
                 if (machines != null && !machines.isEmpty()) {
                     if (machines.size() > 1)
                         warnOnce(key, "multiple machine recipes; using indexed registration order, not verified NEI order");
