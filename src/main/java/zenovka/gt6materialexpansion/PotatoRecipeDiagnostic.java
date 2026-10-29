@@ -22,6 +22,7 @@ public final class PotatoRecipeDiagnostic {
         ItemStack raw = new ItemStack(Items.potato);
         ItemStack baked = new ItemStack(Items.baked_potato);
         FMLLog.info("[GT6MaterialExpansion][potato] BEGIN");
+        FMLLog.info("[GT6MaterialExpansion][potato] raw hasSubtypes=%s wildcard=%d", raw.getItem().getHasSubtypes(), net.minecraftforge.oredict.OreDictionary.WILDCARD_VALUE);
         describe("raw", raw);
         describe("baked", baked);
         int crafting = 0, furnace = 0, machines = 0;
