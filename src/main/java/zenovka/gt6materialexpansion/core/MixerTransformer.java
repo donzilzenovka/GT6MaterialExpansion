@@ -242,8 +242,44 @@ public final class MixerTransformer implements IClassTransformer, Opcodes {
             return bytes;
         }
     }
+    private byte[] transformEnderIOAlloy(byte[] bytes) {
+        try {
+            ClassNode node = new ClassNode();
+            new ClassReader(bytes).accept(node, 0);
+            int patched = 0;
+            for (MethodNode method : node.methods) {
+                if (!"taskComplete".equals(method.name) || !"()V".equals(method.desc)) continue;
+                for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
+                    if (!(insn instanceof MethodInsnNode)) continue;
+                    MethodInsnNode call = (MethodInsnNode) insn;
+                    if (!"mergeResults".equals(call.name)
+                            || !call.desc.startsWith("([Lcrazypants/enderio/machine/IMachineRecipe$ResultStack;)")) continue;
+                    call.setOpcode(INVOKESTATIC);
+                    call.owner = "zenovka/gt6materialexpansion/core/AlloySmelterBridge";
+                    call.name = "merge";
+                    call.desc = "(Ljava/lang/Object;Ljava/lang/Object;)V";
+                    call.itf = false;
+                    patched++;
+                }
+            }
+            if (patched != 1) {
+                System.err.println("[GT6MaterialExpansion/Alloy] Completion signature mismatch: " + patched);
+                return bytes;
+            }
+            ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            node.accept(writer);
+            System.out.println("[GT6MaterialExpansion/Alloy] Installed task completion hook.");
+            return writer.toByteArray();
+        } catch (Throwable error) {
+            System.err.println("[GT6MaterialExpansion/Alloy] Transformer failed.");
+            error.printStackTrace();
+            return bytes;
+        }
+    }
+
     @Override public byte[] transform(String name, String transformedName, byte[] bytes) {
         if (bytes == null) return bytes;
+        if ("crazypants.enderio.machine.AbstractPoweredTaskEntity".equals(transformedName)) return transformEnderIOAlloy(bytes);
         if ("net.minecraft.inventory.SlotCrafting".equals(transformedName)) return transformTransfer(bytes, true);
         if ("net.minecraft.inventory.ContainerWorkbench".equals(transformedName)) return transformTransfer(bytes, false);
         if (CRAFTING.equals(transformedName)) return transformCrafting(bytes);
