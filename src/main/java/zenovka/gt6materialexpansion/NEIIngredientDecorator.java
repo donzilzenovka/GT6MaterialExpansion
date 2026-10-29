@@ -10,6 +10,9 @@ import codechicken.nei.recipe.ICraftingHandler;
 import codechicken.nei.recipe.IRecipeHandler;
 import codechicken.nei.recipe.IUsageHandler;
 import cpw.mods.fml.common.FMLLog;
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.client.gui.inventory.GuiContainer;
@@ -38,13 +41,29 @@ public final class NEIIngredientDecorator implements ICraftingHandler, IUsageHan
                 && handler.getClass().getName().toLowerCase(java.util.Locale.ROOT).contains("enderio");
     }
 
+    private static boolean registered;
+    private static boolean foundHandlers;
+
+    /** Ender IO registers its NEI handlers after FML load-complete. */
     public static void install() {
+        if (registered) return;
+        registered = true;
+        FMLCommonHandler.instance().bus().register(new NEIIngredientDecorator(null));
+        FMLLog.info("[GT6MaterialExpansion][nei-ingredients] Waiting for Ender IO NEI handlers");
+    }
+
+    @SubscribeEvent
+    public void onClientTick(TickEvent.ClientTickEvent event) {
+        if (foundHandlers || event.phase != TickEvent.Phase.END) return;
         int count = 0;
         count += wrapCrafting(GuiCraftingRecipe.craftinghandlers);
         count += wrapCrafting(GuiCraftingRecipe.serialCraftingHandlers);
         count += wrapUsage(GuiUsageRecipe.usagehandlers);
         count += wrapUsage(GuiUsageRecipe.serialUsageHandlers);
-        FMLLog.info("[GT6MaterialExpansion][nei-ingredients] Wrapped %d Ender IO handler registrations", count);
+        if (count > 0) {
+            foundHandlers = true;
+            FMLLog.info("[GT6MaterialExpansion][nei-ingredients] Wrapped %d late Ender IO handler registrations", count);
+        }
     }
 
     private static int wrapCrafting(List<ICraftingHandler> handlers) {
