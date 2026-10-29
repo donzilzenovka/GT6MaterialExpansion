@@ -18,6 +18,7 @@ import net.minecraft.item.crafting.ShapelessRecipes;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.oredict.ShapedOreRecipe;
 import net.minecraftforge.oredict.ShapelessOreRecipe;
+import net.minecraftforge.oredict.OreDictionary;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -122,6 +123,15 @@ public final class MaterialDefaultResolver {
                 List<OreDictMaterialStack> inherited = OreDictMaterialStack.loadList(key, tag);
                 if (inherited != null && !inherited.isEmpty()) return inherited;
             }
+        }
+        // Forge's 32767 is a recipe wildcard, not a concrete material identity.
+        // Resolve metadata 0 only for items that do not have subtypes; for
+        // subtype-bearing items the wildcard may represent different materials.
+        if (stack.getItemDamage() == OreDictionary.WILDCARD_VALUE) {
+            if (stack.getItem().getHasSubtypes()) return matter();
+            ItemStack concrete = stack.copy();
+            concrete.setItemDamage(0);
+            return resolve(concrete, visiting, depth + 1);
         }
         OreDictItemData direct = OM.anydata(stack);
         if (direct != null && direct.getAllMaterialStacks() != null
