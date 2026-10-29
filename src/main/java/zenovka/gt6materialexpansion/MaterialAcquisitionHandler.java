@@ -16,7 +16,6 @@ import java.util.List;
  * Only annotate a missing composition; never replace recipe inheritance.
  */
 public final class MaterialAcquisitionHandler {
-    private static final String ORIGINAL = "zenovka.original.mats";
     private static final String RECYCLING = "gt.recycling.mats";
 
     @SubscribeEvent
@@ -32,7 +31,7 @@ public final class MaterialAcquisitionHandler {
         // GT6 tools carry their own material identity. Never attach canonical Matter.
         if (stack.getItem() instanceof MultiItemTool) return false;
         NBTTagCompound tag = stack.getTagCompound();
-        if (tag != null && (tag.hasKey(ORIGINAL) || tag.hasKey(RECYCLING))) return false;
+        if (tag != null && (tag.hasKey(RECYCLING) || tag.hasKey("zenovka.original.mats"))) return false;
         OreDictItemData data = OM.anydata(stack);
         if (data != null && data.getAllMaterialStacks() != null
                 && !data.getAllMaterialStacks().isEmpty()) return false;
@@ -40,9 +39,7 @@ public final class MaterialAcquisitionHandler {
         List<OreDictMaterialStack> fallback = MaterialDefaultResolver.resolve(stack);
         if (fallback == null || fallback.isEmpty()) return false;
         NBTTagCompound result = tag == null ? new NBTTagCompound() : (NBTTagCompound) tag.copy();
-        OreDictMaterialStack.saveList(ORIGINAL, result, fallback);
         OreDictMaterialStack.saveList(RECYCLING, result, fallback);
-        result.setString("zenovka.material.origin", "canonical-first-recipe");
         stack.setTagCompound(result);
         return true;
     }
