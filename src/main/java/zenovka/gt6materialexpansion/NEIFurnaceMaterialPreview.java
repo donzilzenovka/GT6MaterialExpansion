@@ -11,8 +11,6 @@ import cpw.mods.fml.common.FMLLog;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import gregapi.oredict.OreDictMaterialStack;
-import gregapi.oredict.OreDictItemData;
-import gregapi.util.OM;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.FurnaceRecipes;
 import java.util.List;
@@ -71,12 +69,6 @@ public final class NEIFurnaceMaterialPreview extends FurnaceRecipeHandler {
         decorate();
     }
 
-    private static boolean isUnresolved(List<OreDictMaterialStack> materials) {
-        return materials == null || materials.isEmpty()
-                || (materials.size() == 1 && materials.get(0) != null
-                    && materials.get(0).mMaterial == GT6MaterialExpansion.Matter);
-    }
-
     private void decorate() {
         for (CachedRecipe cached : arecipes) {
             PositionedStack output = cached.getResult();
@@ -102,15 +94,6 @@ public final class NEIFurnaceMaterialPreview extends FurnaceRecipeHandler {
             }
             if (matches != 1) continue; // No guessing for ambiguous furnace mappings.
             List<OreDictMaterialStack> materials = MaterialDefaultResolver.resolve(matchedInput);
-            // An unresolved input must not replace an established material
-            // association on the smelting result (e.g. baked potato).
-            if (isUnresolved(materials)) {
-                OreDictItemData direct = OM.anydata(shownOutput);
-                if (direct != null && direct.getAllMaterialStacks() != null
-                        && !direct.getAllMaterialStacks().isEmpty())
-                    materials = direct.getAllMaterialStacks();
-            }
-            if (isUnresolved(materials)) continue;
             ItemStack preview = RecipePreviewTags.copyWithMaterials(shownOutput, materials);
             if (preview == null) continue;
             output.items = new ItemStack[] { preview };
