@@ -29,6 +29,10 @@ public final class ItemMaterialRegistry {
         assignIfMissing("BiomesOPlenty:newBopDirt", 4, MT.STONES.Siltstone, 9 * U);
         assignIfMissing("BiomesOPlenty:newBopGrass", 0, Loam, 9 * U);
         assignIfMissing("BiomesOPlenty:mud", 0, Soil, 9 * U);
+        // Ender IO Silicon (numeric item ID may be 4321 in this pack).
+        // Registry identity is EnderIO:itemMaterial, metadata 0.
+        // The GT6 silicon plate alternatives each contain 1 U Silicon.
+        assignIfMissing("EnderIO:itemMaterial", 0, MT.Silicon, U);
         ProduceItemAssociations.register();
         FloraMaterials.register(PlantMatter);
         FungalMaterials.register(Mycelium);
