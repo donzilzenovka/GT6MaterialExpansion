@@ -33,6 +33,9 @@ public final class ItemMaterialRegistry {
         // Registry identity is EnderIO:itemMaterial, metadata 0.
         // The GT6 silicon plate alternatives each contain 1 U Silicon.
         assignIfMissing("EnderIO:itemMaterial", 0, MT.Si, U);
+        // Provisional Enderman head: seven units bone and two Ender Pearls (eyes).
+        // Restrict this test to the base head metadata; do not affect other skull variants.
+        assignEndermanHeadIfMissing();
         ProduceItemAssociations.register();
         FloraMaterials.register(PlantMatter);
         FungalMaterials.register(Mycelium);
@@ -74,6 +77,15 @@ public final class ItemMaterialRegistry {
         overrideMeatItem("minecraft:cooked_fished", 0, CodCooked);
         overrideMeatItem("minecraft:fish", 1, SalmonRaw);
         overrideMeatItem("minecraft:cooked_fished", 1, SalmonCooked);
+    }
+    private static void assignEndermanHeadIfMissing() {
+        Object registered = Item.itemRegistry.getObject("EnderIO:blockEndermanSkull");
+        if (!(registered instanceof Item)) return;
+        ItemStack stack = new ItemStack((Item) registered, 1, 0);
+        if (OreDictManager.INSTANCE.getItemData(stack) != null) return;
+        OreDictManager.INSTANCE.addItemData(stack, new OreDictItemData(
+            OM.stack(MT.Bone, 7 * U), OM.stack(MT.EnderPearl, 2 * U)));
+        FMLLog.info("[GT6MaterialExpansion] Registered provisional Enderman head: 7 U Bone + 2 U Ender Pearl");
     }
     private static void overrideMeatItem(String registryName, int metadata, OreDictMaterial material) {
         Object registered = Item.itemRegistry.getObject(registryName);
