@@ -224,7 +224,7 @@ public final class NEIIngredientDecorator implements ICraftingHandler, IUsageHan
         }
         Object key = net.minecraft.item.Item.itemRegistry.getNameForObject(stack.getItem());
         gregapi.oredict.OreDictItemData existing = gregapi.util.OM.anydata(stack);
-        gregapi.oredict.OreDictItemData inferred = MaterialDefaultResolver.resolve(stack);
+        java.util.List<gregapi.oredict.OreDictMaterialStack> inferred = MaterialDefaultResolver.resolve(stack);
         FMLLog.info("[GT6MaterialExpansion][slice-diagnostic] %s item=%s meta=%d count=%d nbt=%s existing=%s inferred=%s",
                 label, key, stack.getItemDamage(), stack.stackSize,
                 stack.hasTagCompound() ? stack.getTagCompound().toString() : "none",
