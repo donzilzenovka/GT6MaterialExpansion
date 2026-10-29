@@ -44,7 +44,6 @@ public final class NEIIngredientDecorator implements ICraftingHandler, IUsageHan
     }
 
     private static boolean registered;
-    private static boolean foundHandlers;
 
     /** Ender IO registers its NEI handlers after FML load-complete. */
     public static void install() {
@@ -56,12 +55,11 @@ public final class NEIIngredientDecorator implements ICraftingHandler, IUsageHan
 
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (foundHandlers || event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickEvent.Phase.END) return;
         int count = 0;
         count += wrapUsage(GuiUsageRecipe.usagehandlers);
         count += wrapUsage(GuiUsageRecipe.serialUsageHandlers);
         if (count > 0) {
-            foundHandlers = true;
             FMLLog.info("[GT6MaterialExpansion][nei-ingredients] Wrapped %d late NEI usage handler registrations", count);
         }
     }
@@ -136,6 +134,11 @@ public final class NEIIngredientDecorator implements ICraftingHandler, IUsageHan
                 if (!(enriched[i] instanceof ItemStack)) continue;
                 ItemStack item = (ItemStack) enriched[i];
                 if (item.getItem() == null) continue;
+                gregapi.oredict.OreDictItemData existing = gregapi.util.OM.anydata(item);
+                if (existing != null && existing.getAllMaterialStacks() != null
+                        && !existing.getAllMaterialStacks().isEmpty()
+                        && existing.getAllMaterialStacks().get(0).mMaterial != GT6MaterialExpansion.Matter)
+                    continue;
                 ItemStack resolved = RecipePreviewTags.copyWithMaterials(
                         item, MaterialDefaultResolver.resolve(item));
                 if (resolved != null && !net.minecraft.item.ItemStack.areItemStackTagsEqual(item, resolved)) {
