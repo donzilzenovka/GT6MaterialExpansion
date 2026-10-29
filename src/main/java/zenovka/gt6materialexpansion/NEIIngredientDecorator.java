@@ -236,7 +236,20 @@ public final class NEIIngredientDecorator implements ICraftingHandler, IUsageHan
         decorate(stacks);
         return stacks;
     }
-    @Override public PositionedStack getResultStack(int recipe) { return delegate.getResultStack(recipe); }
+    @Override public PositionedStack getResultStack(int recipe) {
+        PositionedStack output = delegate.getResultStack(recipe);
+        if (output == null || output.item == null) return output;
+        String type = delegate.getClass().getName().toLowerCase(java.util.Locale.ROOT);
+        String id = delegate.getHandlerId();
+        if (!type.contains("slice") && (id == null || !id.toLowerCase(java.util.Locale.ROOT).contains("slice")))
+            return output;
+        ItemStack resolved = RecipePreviewTags.copyWithMaterials(
+                output.item, MaterialDefaultResolver.resolve(output.item));
+        // Never modify the registered Ender IO recipe's output stack.
+        if (resolved != null && !net.minecraft.item.ItemStack.areItemStackTagsEqual(output.item, resolved))
+            return new PositionedStack(resolved, output.relx, output.rely);
+        return output;
+    }
     @Override public void onUpdate() { delegate.onUpdate(); }
     @Override public boolean hasOverlay(GuiContainer gui, Container container, int recipe) {
         return delegate.hasOverlay(gui, container, recipe);
