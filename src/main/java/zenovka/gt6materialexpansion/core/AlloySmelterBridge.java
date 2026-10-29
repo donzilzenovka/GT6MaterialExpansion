@@ -41,8 +41,7 @@ public final class AlloySmelterBridge {
 
     public static void merge(Object machine, Object results) {
         try {
-            if (machine.getClass().getName().equals("crazypants.enderio.machine.alloy.TileAlloySmelter")
-                    && "ALLOY".equals(String.valueOf(method(machine.getClass(), "getMode", 0).invoke(machine)))) {
+            if (machine.getClass().getName().equals("crazypants.enderio.machine.alloy.TileAlloySmelter")) {
                 enrich(machine, results);
             }
         } catch (Throwable error) {
@@ -75,7 +74,11 @@ public final class AlloySmelterBridge {
         Object task = method(machine.getClass(), "getCurrentTask", 0).invoke(machine);
         if (task == null) return;
         Object recipe = method(task.getClass(), "getRecipe", 0).invoke(task);
-        if (recipe == null || recipe.getClass().getName().endsWith("VanillaSmeltingRecipe")) return;
+        if (recipe == null) return;
+        String recipeName = recipe.getClass().getName();
+        boolean furnaceRecipe = recipeName.equals("crazypants.enderio.machine.alloy.VanillaSmeltingRecipe");
+        String mode = String.valueOf(method(machine.getClass(), "getMode", 0).invoke(machine));
+        if (!furnaceRecipe && !("ALLOY".equals(mode) || "ALL".equals(mode))) return;
         Object inputs = method(task.getClass(), "getInputs", 0).invoke(task);
         Object consumed = method(recipe.getClass(), "getQuantitiesConsumed", 1).invoke(recipe, inputs);
         if (!(consumed instanceof List)) return;
@@ -94,7 +97,8 @@ public final class AlloySmelterBridge {
         }
         ItemStack tagged = RecipePreviewTags.copyWithMaterials(output, composition);
         output.setTagCompound(tagged.getTagCompound());
-        System.out.println("[GT6MaterialExpansion/Alloy] Tagged " + tagged.stackSize
+        System.out.println("[GT6MaterialExpansion/Alloy] " + (furnaceRecipe ? "Furnace" : "Alloy")
+                + " recipe: tagged " + tagged.stackSize
                 + " output items from " + items.size() + " consumed ingredient stacks.");
     }
 }
