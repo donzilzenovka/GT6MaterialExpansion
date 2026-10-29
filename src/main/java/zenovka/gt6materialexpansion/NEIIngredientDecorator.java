@@ -31,6 +31,7 @@ import java.util.Set;
 @SideOnly(Side.CLIENT)
 public final class NEIIngredientDecorator implements ICraftingHandler, IUsageHandler {
     private final IRecipeHandler delegate;
+    private final Set<Integer> diagnosedRecipes = new java.util.HashSet<Integer>();
     private final Set<PositionedStack> decorated =
             Collections.newSetFromMap(new IdentityHashMap<PositionedStack, Boolean>());
 
@@ -174,9 +175,62 @@ public final class NEIIngredientDecorator implements ICraftingHandler, IUsageHan
     @Override public void drawForeground(int recipe) { delegate.drawForeground(recipe); }
     @Override public List<PositionedStack> getIngredientStacks(int recipe) {
         List<PositionedStack> stacks = delegate.getIngredientStacks(recipe);
+        diagnoseSlice(recipe, stacks);
         decorate(stacks);
         return stacks;
     }
+    /**
+     * One-shot, read-only Slice'N'Splice diagnostics. Position and permutation
+     * counts help distinguish tool slots from consumed ingredient slots.
+     */
+    private void diagnoseSlice(int recipe, List<PositionedStack> inputs) {
+        String name = delegate.getClass().getName().toLowerCase(java.util.Locale.ROOT);
+        String id = delegate.getHandlerId();
+        String title = delegate.getRecipeName();
+        String descriptor = (id == null ? "" : id) + " " + (title == null ? "" : title);
+        if (!name.contains("slice") && !descriptor.toLowerCase(java.util.Locale.ROOT).contains("slice"))
+            return;
+        synchronized (diagnosedRecipes) {
+            if (!diagnosedRecipes.add(recipe)) return;
+        }
+        FMLLog.info("[GT6MaterialExpansion][slice-diagnostic] handler=%s id=%s recipe=%d/%d inputs=%d",
+                delegate.getClass().getName(), id, recipe, delegate.numRecipes(),
+                inputs == null ? 0 : inputs.size());
+        if (inputs != null) {
+            for (int i = 0; i < inputs.size(); i++) {
+                PositionedStack slot = inputs.get(i);
+                if (slot == null) continue;
+                ItemStack[] variants = slot.items;
+                FMLLog.info("[GT6MaterialExpansion][slice-diagnostic] input[%d] x=%d y=%d variants=%d",
+                        i, slot.relx, slot.rely, variants == null ? 0 : variants.length);
+                if (variants == null) continue;
+                for (int j = 0; j < variants.length && j < 8; j++)
+                    diagnoseSliceItem("input[" + i + "].variant[" + j + "]", variants[j]);
+            }
+        }
+        PositionedStack output = delegate.getResultStack(recipe);
+        if (output != null) diagnoseSliceItem("output", output.item);
+        List<PositionedStack> other = delegate.getOtherStacks(recipe);
+        if (other != null) for (int i = 0; i < other.size(); i++) {
+            PositionedStack slot = other.get(i);
+            if (slot != null) diagnoseSliceItem("other[" + i + "]", slot.item);
+        }
+    }
+
+    private static void diagnoseSliceItem(String label, ItemStack stack) {
+        if (stack == null || stack.getItem() == null) {
+            FMLLog.info("[GT6MaterialExpansion][slice-diagnostic] %s null", label);
+            return;
+        }
+        Object key = net.minecraft.item.Item.itemRegistry.getNameForObject(stack.getItem());
+        gregapi.oredict.OreDictItemData existing = gregapi.util.OM.anydata(stack);
+        gregapi.oredict.OreDictItemData inferred = MaterialDefaultResolver.resolve(stack);
+        FMLLog.info("[GT6MaterialExpansion][slice-diagnostic] %s item=%s meta=%d count=%d nbt=%s existing=%s inferred=%s",
+                label, key, stack.getItemDamage(), stack.stackSize,
+                stack.hasTagCompound() ? stack.getTagCompound().toString() : "none",
+                String.valueOf(existing), String.valueOf(inferred));
+    }
+
     @Override public List<PositionedStack> getOtherStacks(int recipe) {
         List<PositionedStack> stacks = delegate.getOtherStacks(recipe);
         decorate(stacks);
