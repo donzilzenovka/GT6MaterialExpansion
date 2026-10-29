@@ -81,14 +81,7 @@ public final class NEIFurnaceMaterialPreview extends FurnaceRecipeHandler {
                     result.getItemDamage(), result.getTagCompound(), getHandlerId());
         // NEI's vanilla furnace lookup compares output NBT. Preview-only
         // material annotations must not affect which smelting recipe is found.
-        ItemStack lookup = result;
-        if (result != null && result.hasTagCompound()
-                && result.getTagCompound().hasKey("gt.recycling.mats")) {
-            lookup = result.copy();
-            net.minecraft.nbt.NBTTagCompound tags = lookup.getTagCompound();
-            tags.removeTag("gt.recycling.mats");
-            if (tags.hasNoTags()) lookup.setTagCompound(null);
-        }
+        ItemStack lookup = NEIRecipeLookup.identity(result);
         super.loadCraftingRecipes(lookup);
         if (isBakedPotato(result))
             FMLLog.info("[GT6MaterialExpansion][nei-furnace] baked potato matches before decoration=%d", arecipes.size());
@@ -97,7 +90,7 @@ public final class NEIFurnaceMaterialPreview extends FurnaceRecipeHandler {
 
     @Override
     public void loadUsageRecipes(ItemStack ingredient) {
-        super.loadUsageRecipes(ingredient);
+        super.loadUsageRecipes(NEIRecipeLookup.identity(ingredient));
         decorate();
     }
 
