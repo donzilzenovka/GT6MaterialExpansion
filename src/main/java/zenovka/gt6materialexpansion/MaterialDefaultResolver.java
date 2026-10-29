@@ -97,6 +97,88 @@ public final class MaterialDefaultResolver {
         return result.isEmpty() ? matter() : result;
     }
 
+    /**
+     * Ender IO Slice'N'Splice: only the six manufacturing slots contribute
+     * material. The axe and shears are tooling, not recipe ingredients.
+     * Reflection keeps Ender IO optional at class-loading time.
+     */
+    private static List<OreDictMaterialStack> resolveSlice(ItemStack target,
+            Set<String> visiting, int depth) {
+        if (!cpw.mods.fml.common.Loader.isModLoaded("EnderIO")) return null;
+        try {
+            Class<?> managerClass = Class.forName(
+                    "crazypants.enderio.machine.slicensplice.SliceAndSpliceRecipeManager");
+            Object manager = managerClass.getMethod("getInstance").invoke(null);
+            Object raw = managerClass.getMethod("getRecipes").invoke(manager);
+            if (!(raw instanceof Iterable)) return null;
+            List<Object> matches = new ArrayList<Object>();
+            for (Object recipe : (Iterable<?>) raw) {
+                Object[] outputs = (Object[]) recipe.getClass().getMethod("getOutputs").invoke(recipe);
+                if (outputs == null || outputs.length != 1 || outputs[0] == null) continue;
+                ItemStack output = (ItemStack) outputs[0].getClass().getMethod("getOutput").invoke(outputs[0]);
+                if (output != null && output.getItem() == target.getItem()
+                        && output.getItemDamage() == target.getItemDamage()) matches.add(recipe);
+            }
+            if (matches.isEmpty()) return null;
+            if (matches.size() != 1) {
+                warnOnce(itemKey(target), "multiple Slice'N'Splice recipes; composition ambiguous");
+                return matter();
+            }
+            Object recipe = matches.get(0);
+            Object[] outputs = (Object[]) recipe.getClass().getMethod("getOutputs").invoke(recipe);
+            ItemStack output = (ItemStack) outputs[0].getClass().getMethod("getOutput").invoke(outputs[0]);
+            if (output == null || output.stackSize <= 0) return matter();
+            Object[] inputs = (Object[]) recipe.getClass().getMethod("getInputs").invoke(recipe);
+            if (inputs == null) return matter();
+            Map<OreDictMaterial, Long> totals = new LinkedHashMap<OreDictMaterial, Long>();
+            for (Object input : inputs) {
+                if (input == null) continue;
+                Class<?> type = input.getClass();
+                int slot = ((Number) type.getMethod("getSlotNumber").invoke(input)).intValue();
+                if (slot < 0 || slot > 5) return matter();
+                if (Boolean.TRUE.equals(type.getMethod("isFluid").invoke(input))) return matter();
+                ItemStack primary = (ItemStack) type.getMethod("getInput").invoke(input);
+                if (primary == null || primary.getItem() == null || primary.stackSize <= 0) return matter();
+                List<OreDictMaterialStack> parts = resolve(primary, visiting, depth + 1);
+                if (isMatter(parts)) return matter();
+                Object alternatives = type.getMethod("getEquivelentInputs").invoke(input);
+                if (alternatives instanceof ItemStack[]) {
+                    for (ItemStack alternative : (ItemStack[]) alternatives) {
+                        if (alternative == null || alternative.getItem() == null) return matter();
+                        List<OreDictMaterialStack> other = resolve(alternative, visiting, depth + 1);
+                        if (!sameMaterials(parts, other)) {
+                            warnOnce(itemKey(target), "Slice'N'Splice alternatives have different material compositions");
+                            return matter();
+                        }
+                    }
+                }
+                if (!add(totals, parts, primary.stackSize)) return matter();
+            }
+            List<OreDictMaterialStack> result = new ArrayList<OreDictMaterialStack>();
+            for (Map.Entry<OreDictMaterial, Long> entry : totals.entrySet()) {
+                if (entry.getValue() < 0 || entry.getValue() % output.stackSize != 0) return matter();
+                if (entry.getValue() > 0)
+                    result.add(OM.stack(entry.getKey(), entry.getValue() / output.stackSize));
+            }
+            return result.isEmpty() ? matter() : result;
+        } catch (ReflectiveOperationException | ClassCastException ex) {
+            warnOnce(itemKey(target), "Slice'N'Splice registry lookup failed: " + ex.getClass().getSimpleName());
+            return null;
+        }
+    }
+
+    private static boolean isMatter(List<OreDictMaterialStack> parts) {
+        return parts == null || parts.isEmpty()
+                || (parts.size() == 1 && parts.get(0).mMaterial == GT6MaterialExpansion.Matter);
+    }
+
+    private static boolean sameMaterials(List<OreDictMaterialStack> a, List<OreDictMaterialStack> b) {
+        if (isMatter(a) || isMatter(b)) return false;
+        Map<OreDictMaterial, Long> left = new LinkedHashMap<OreDictMaterial, Long>();
+        Map<OreDictMaterial, Long> right = new LinkedHashMap<OreDictMaterial, Long>();
+        return add(left, a, 1) && add(right, b, 1) && left.equals(right);
+    }
+
     private static final Set<String> WARNED = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
     private static void warnOnce(String key, String reason) {
@@ -188,6 +270,11 @@ public final class MaterialDefaultResolver {
                             && !(resolved.size() == 1 && resolved.get(0).mMaterial == GT6MaterialExpansion.Matter))
                         CANONICAL_CACHE.put(key, resolved);
                     return resolved;
+                }
+                List<OreDictMaterialStack> sliced = resolveSlice(stack, visiting, depth);
+                if (sliced != null) {
+                    if (!isMatter(sliced)) CANONICAL_CACHE.put(key, sliced);
+                    return sliced;
                 }
                 return matter();
             }
