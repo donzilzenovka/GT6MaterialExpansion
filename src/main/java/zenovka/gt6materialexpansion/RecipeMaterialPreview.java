@@ -33,34 +33,43 @@ public final class RecipeMaterialPreview {
      * Ore-dictionary alternatives use the first available stack for a canonical preview.
      */
     public static List<OreDictMaterialStack> forCrafting(IRecipe recipe) {
-        int soundQueueBefore = SoundQueueDiagnostic.pending();
-        try {
-            return forCraftingInspected(recipe);
-        } finally {
-            SoundQueueDiagnostic.report("RecipeMaterialPreview.forCrafting",
-                    recipe == null ? null : recipe.getRecipeOutput(), soundQueueBefore);
-        }
-    }
-
-    private static List<OreDictMaterialStack> forCraftingInspected(IRecipe recipe) {
         if (recipe == null) return null;
+        int beforeOutput = SoundQueueDiagnostic.pending();
         ItemStack output = recipe.getRecipeOutput();
+        SoundQueueDiagnostic.report("crafting.getRecipeOutput", output, beforeOutput);
         if (output == null || output.stackSize <= 0) return null;
+
+        int beforeInputs = SoundQueueDiagnostic.pending();
         Object[] ingredients;
         if (recipe instanceof ShapedRecipes) ingredients = ((ShapedRecipes) recipe).recipeItems;
         else if (recipe instanceof ShapelessRecipes) ingredients = ((ShapelessRecipes) recipe).recipeItems.toArray();
         else if (recipe instanceof ShapedOreRecipe) ingredients = ((ShapedOreRecipe) recipe).getInput();
         else if (recipe instanceof ShapelessOreRecipe) ingredients = ((ShapelessOreRecipe) recipe).getInput().toArray();
         else return null;
+        SoundQueueDiagnostic.report("crafting.getIngredients", output, beforeInputs);
+
         Map<OreDictMaterial, Long> totals = new LinkedHashMap<OreDictMaterial, Long>();
-        for (Object ingredient : ingredients) {
+        for (int index = 0; index < ingredients.length; index++) {
+            Object ingredient = ingredients[index];
             if (ingredient == null) continue;
+            int beforeChoose = SoundQueueDiagnostic.pending();
             ItemStack chosen = choose(ingredient);
+            SoundQueueDiagnostic.report("crafting.choose[" + index + "]", chosen, beforeChoose);
             if (chosen == null) return null;
-            if (chosen.stackSize == 0 || chosen.getItem() instanceof MultiItemTool) continue; // shaping tools are not consumed
-            if (!accumulate(totals, MaterialDefaultResolver.resolve(chosen), 1)) return null;
-            if (chosen.getItem().hasContainerItem(chosen)) {
+            if (chosen.stackSize == 0 || chosen.getItem() instanceof MultiItemTool) continue;
+
+            int beforeResolve = SoundQueueDiagnostic.pending();
+            List<OreDictMaterialStack> materials = MaterialDefaultResolver.resolve(chosen);
+            SoundQueueDiagnostic.report("crafting.resolve[" + index + "]", chosen, beforeResolve);
+            if (!accumulate(totals, materials, 1)) return null;
+
+            int beforeContainer = SoundQueueDiagnostic.pending();
+            boolean hasContainer = chosen.getItem().hasContainerItem(chosen);
+            SoundQueueDiagnostic.report("crafting.hasContainer[" + index + "]", chosen, beforeContainer);
+            if (hasContainer) {
+                int beforeGetContainer = SoundQueueDiagnostic.pending();
                 ItemStack container = chosen.getItem().getContainerItem(chosen);
+                SoundQueueDiagnostic.report("crafting.getContainer[" + index + "]", chosen, beforeGetContainer);
                 if (container != null && !accumulate(totals, MaterialDefaultResolver.resolve(container), -1)) return null;
             }
         }
