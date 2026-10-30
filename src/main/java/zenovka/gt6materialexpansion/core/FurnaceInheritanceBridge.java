@@ -10,7 +10,6 @@ import net.minecraft.nbt.NBTTagCompound;
 
 /** Per-operation furnace output; never modifies FurnaceRecipes' shared template. */
 public final class FurnaceInheritanceBridge {
-    private static final String ORIGINAL = "zenovka.original.mats";
     private static final String RECYCLING = "gt.recycling.mats";
 
     private FurnaceInheritanceBridge() {}
@@ -37,7 +36,7 @@ public final class FurnaceInheritanceBridge {
         if (input == null || input.stackSize <= 0 || output.stackSize != 1) return output;
 
         NBTTagCompound tag = output.getTagCompound();
-        if (tag != null && tag.hasKey(ORIGINAL)) return output;
+        if (tag != null && (tag.hasKey(RECYCLING) || tag.hasKey("zenovka.original.mats"))) return output;
         OreDictItemData registered = OreDictManager.INSTANCE.getItemData(output);
         if (registered != null && registered.getAllMaterialStacks() != null
                 && !registered.getAllMaterialStacks().isEmpty()) return output;
@@ -53,7 +52,6 @@ public final class FurnaceInheritanceBridge {
         }
         if (parts.isEmpty()) return output;
         if (tag == null) tag = new NBTTagCompound();
-        OreDictMaterialStack.saveList(ORIGINAL, tag, parts);
         OreDictMaterialStack.saveList(RECYCLING, tag, parts);
         output.setTagCompound(tag);
         return output;

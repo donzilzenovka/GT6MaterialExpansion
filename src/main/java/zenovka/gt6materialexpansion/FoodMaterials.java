@@ -27,7 +27,6 @@ import java.util.Map;
  * Does not overwrite global GT6 material registrations.
  */
 public final class FoodMaterials {
-    private static final String ORIGINAL_TAG = "zenovka.original.mats";
     private static final String RECYCLING_TAG = "gt.recycling.mats";
 
     private static final int DIAGNOSTIC_LIMIT = 100;
@@ -62,7 +61,7 @@ public final class FoodMaterials {
     @SubscribeEvent
     public void diagnosticCraft(PlayerEvent.ItemCraftedEvent event) {
         if (event.crafting == null || event.crafting.getTagCompound() == null
-                || !event.crafting.getTagCompound().hasKey(ORIGINAL_TAG)) return;
+                || !(event.crafting.getTagCompound().hasKey(RECYCLING_TAG) || event.crafting.getTagCompound().hasKey("zenovka.original.mats"))) return;
         String side = event.player.worldObj.isRemote ? "CLIENT" : "SERVER";
         ItemStack cursor = event.player.inventory.getItemStack();
         ItemStack preview = LAST_PREVIEW.get();
@@ -103,14 +102,13 @@ public final class FoodMaterials {
         if (template == null || matrix == null) return template;
         ItemStack output = template.copy();
         NBTTagCompound existing = output.getTagCompound();
-        if (existing != null && existing.hasKey(ORIGINAL_TAG)) return output;
+        if (existing != null && (existing.hasKey(RECYCLING_TAG) || existing.hasKey("zenovka.original.mats"))) return output;
         OreDictItemData canonical = OreDictManager.INSTANCE.getItemData(output);
         if (canonical != null && canonical.getAllMaterialStacks() != null
                 && !canonical.getAllMaterialStacks().isEmpty()) return output;
         List<OreDictMaterialStack> materials = derive(matrix, output.stackSize);
         if (materials == null || materials.isEmpty()) return output;
         NBTTagCompound tag = existing == null ? new NBTTagCompound() : existing;
-        OreDictMaterialStack.saveList(ORIGINAL_TAG, tag, materials);
         OreDictMaterialStack.saveList(RECYCLING_TAG, tag, materials);
         output.setTagCompound(tag);
         ItemStack previous = LAST_PREVIEW.get();
