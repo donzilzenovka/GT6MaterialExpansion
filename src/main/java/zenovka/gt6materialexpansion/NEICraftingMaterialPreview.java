@@ -84,6 +84,13 @@ public final class NEICraftingMaterialPreview extends ShapelessRecipeHandler {
         return NEIClientUtils.translate("recipe.shaped");
     }
 
+    // NEI executes recipe searches on background workers. Material inference may
+    // invoke GT6 item behaviour that mutates its client sound queue, which is
+    // iterated unsafely on the client tick thread. Never infer on those workers.
+    private static boolean backgroundLookup() {
+        return Thread.currentThread().getName().startsWith("NEI-worker-thread");
+    }
+
     private void append(IRecipe recipe) {
         if (recipe instanceof ShapelessRecipes || recipe instanceof ShapelessOreRecipe) {
             appendShapeless(recipe);
@@ -97,13 +104,13 @@ public final class NEICraftingMaterialPreview extends ShapelessRecipeHandler {
         } else return;
         if (cached == null) return;
         ItemStack original = recipe.getRecipeOutput();
-        if (original != null) {
+        if (original != null && !backgroundLookup()) {
             ItemStack preview = RecipePreviewTags.copyWithMaterials(
                     original, RecipeMaterialPreview.forCrafting(recipe));
             cached.result = new PositionedStack(preview, 119, 24);
         }
         cached.computeVisuals();
-        decorateInputs(cached);
+        if (!backgroundLookup()) decorateInputs(cached);
         arecipes.add(cached);
     }
 
@@ -121,9 +128,9 @@ public final class NEICraftingMaterialPreview extends ShapelessRecipeHandler {
                 cached = new CachedShapelessRecipe(ingredients, recipe.getRecipeOutput());
             } else return;
             if (recipe.getRecipeOutput() == null) return;
-            cached.setResult(RecipePreviewTags.copyWithMaterials(
+            if (!backgroundLookup()) cached.setResult(RecipePreviewTags.copyWithMaterials(
                     recipe.getRecipeOutput(), RecipeMaterialPreview.forCrafting(recipe)));
-            for (PositionedStack displayed : cached.ingredients) {
+            if (!backgroundLookup()) for (PositionedStack displayed : cached.ingredients) {
                 if (displayed == null || displayed.items == null) continue;
                 ItemStack[] copies = new ItemStack[displayed.items.length];
                 for (int i = 0; i < copies.length; i++) {
@@ -238,6 +245,7 @@ public final class NEICraftingMaterialPreview extends ShapelessRecipeHandler {
                 matches++;
                 if (matches > 1) break;
             }
+            if (backgroundLookup()) continue;
             decorateInputs(cached);
             if (matches != 1) continue;
             ItemStack preview = RecipePreviewTags.copyWithMaterials(
@@ -246,6 +254,7 @@ public final class NEICraftingMaterialPreview extends ShapelessRecipeHandler {
         }
     }
     private void decorateInputs(CachedShapedRecipe cached) {
+        if (backgroundLookup()) return;
         // NEI's ingredient stacks are display copies. Decorate each permutation
         // without changing registered recipe inputs or reusable tools.
         for (PositionedStack displayed : cached.ingredients) {
