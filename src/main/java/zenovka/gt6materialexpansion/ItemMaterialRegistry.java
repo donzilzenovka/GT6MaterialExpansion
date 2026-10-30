@@ -89,13 +89,47 @@ public final class ItemMaterialRegistry {
             MT.Pink, MT.Lime, MT.Yellow, MT.LightBlue, MT.Magenta, MT.Orange
         };
         for (int i = 0; i < vanillaMetadata.length; i++)
-            assignIfMissing("minecraft:dye", vanillaMetadata[i], vanillaMaterials[i], U);
+            diagnoseDye("minecraft:dye", vanillaMetadata[i], vanillaMaterials[i]);
 
         // Et Futurum Requiem's separate dyes (white, blue, brown, black).
-        assignIfMissing("etfuturum:dye", 0, MT.White, U);
-        assignIfMissing("etfuturum:dye", 1, MT.Blue, U);
-        assignIfMissing("etfuturum:dye", 2, MT.Brown, U);
-        assignIfMissing("etfuturum:dye", 3, MT.Black, U);
+        diagnoseDye("etfuturum:dye", 0, MT.White);
+        diagnoseDye("etfuturum:dye", 1, MT.Blue);
+        diagnoseDye("etfuturum:dye", 2, MT.Brown);
+        diagnoseDye("etfuturum:dye", 3, MT.Black);
+    }
+
+    /** Temporary beta diagnostic: compare GT6's direct and general material lookups. */
+    private static void diagnoseDye(String id, int meta, OreDictMaterial material) {
+        Object obj = Item.itemRegistry.getObject(id);
+        if (!(obj instanceof Item)) {
+            FMLLog.warning("[GT6MaterialExpansion][dye-diagnostic] missing item %s:%d", id, meta);
+            return;
+        }
+        ItemStack stack = new ItemStack((Item) obj, 1, meta);
+        OreDictItemData before = OreDictManager.INSTANCE.getItemData(stack);
+        OreDictItemData beforeAny = OM.anydata(stack);
+        FMLLog.info("[GT6MaterialExpansion][dye-diagnostic] %s:%d expected=%s before=%s anyBefore=%s",
+            id, meta, String.valueOf(material), dyeData(before), dyeData(beforeAny));
+        boolean accepted = false;
+        if (before == null)
+            accepted = OreDictManager.INSTANCE.addItemData(stack, new OreDictItemData(material, U));
+        OreDictItemData after = OreDictManager.INSTANCE.getItemData(stack);
+        OreDictItemData afterAny = OM.anydata(stack);
+        FMLLog.info("[GT6MaterialExpansion][dye-diagnostic] %s:%d attempted=%s accepted=%s after=%s anyAfter=%s",
+            id, meta, before == null, accepted, dyeData(after), dyeData(afterAny));
+    }
+
+    private static String dyeData(OreDictItemData data) {
+        if (data == null) return "<null>";
+        java.util.List<OreDictMaterialStack> parts = data.getAllMaterialStacks();
+        if (parts == null || parts.isEmpty()) return "<empty>";
+        StringBuilder result = new StringBuilder();
+        for (OreDictMaterialStack part : parts) {
+            if (result.length() > 0) result.append(", ");
+            result.append(part == null ? "<null-part>" :
+                String.valueOf(part.mMaterial) + "=" + part.mAmount);
+        }
+        return result.toString();
     }
 
     private static void assignEndermanHeadIfMissing() {
