@@ -49,12 +49,11 @@ public final class ToolMaterials {
         ItemStack result = event.crafting;
         if (result == null || event.craftMatrix == null) return;
         NBTTagCompound existing = result.getTagCompound();
-        // A previously established stack-specific composition always wins.
-        if (existing != null && (existing.hasKey(RECYCLING_TAG) || existing.hasKey(ORIGINAL_TAG))) {
-            return;
-        }
-
         boolean tool = result.getItem() instanceof MultiItemTool;
+        // A recycling tag alone must not prevent a newly crafted GT6 tool
+        // from receiving its immutable baseline. Existing baselines always win.
+        if (existing != null && (existing.hasKey(ORIGINAL_TAG)
+                || (!tool && existing.hasKey(RECYCLING_TAG)))) return;
         // For ordinary items, respect GT6's existing material association (e.g. sticks).
         // Tools retain their established recipe-derived original-material behaviour.
         if (!tool) {
@@ -144,8 +143,9 @@ public final class ToolMaterials {
         long remaining = Math.max(0L, max - MultiItemTool.getToolDamage(stack));
         OreDictMaterial head = MultiItemTool.getPrimaryMaterial(stack);
         OreDictMaterial shaft = MultiItemTool.getSecondaryMaterial(stack);
-        // Only change unambiguously identified head material. If both parts use
-        // the same material, aggregated recipe composition cannot separate them.
+        // When head and shaft share a material, the aggregated original recipe
+        // cannot identify their separate quantities. Preserve the baseline
+        // rather than invent a split; distinct head materials are scaled below.
         if (head == null || head == MT.NULL || head == shaft) return;
         List<OreDictMaterialStack> adjusted = new ArrayList<OreDictMaterialStack>();
         for (OreDictMaterialStack component : original) {

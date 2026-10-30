@@ -168,18 +168,26 @@ public final class NEICraftingMaterialPreview extends ShapelessRecipeHandler {
 
     @Override
     public void loadUsageRecipes(ItemStack ingredient) {
-        for (IRecipe recipe : RecipeIndex.using(NEIRecipeLookup.identity(ingredient))) {
+        // Capture queue growth at the usage boundary without invoking any additional
+        // GT6 item methods. The existing sound diagnostic only logs on growth.
+        int beforeLookup = SoundQueueDiagnostic.pending();
+        List<IRecipe> matches = RecipeIndex.using(NEIRecipeLookup.identity(ingredient));
+        SoundQueueDiagnostic.report("NEI.craftingUsage.indexLookup", ingredient, beforeLookup);
+        for (IRecipe recipe : matches) {
+            int beforeAppend = SoundQueueDiagnostic.pending();
             int before = arecipes.size();
             append(recipe);
+            SoundQueueDiagnostic.report("NEI.craftingUsage.append", ingredient, beforeAppend);
             if (arecipes.size() == before) continue;
             CachedRecipe cached = arecipes.get(arecipes.size() - 1);
+            int beforeMatch = SoundQueueDiagnostic.pending();
             if (cached.contains(cached.getIngredients(), NEIRecipeLookup.identity(ingredient)))
                 cached.setIngredientPermutation(cached.getIngredients(), NEIRecipeLookup.identity(ingredient));
             else
                 arecipes.remove(arecipes.size() - 1);
+            SoundQueueDiagnostic.report("NEI.craftingUsage.matchPermutation", ingredient, beforeMatch);
         }
     }
-
 
     private static boolean usesIngredient(IRecipe recipe, ItemStack wanted) {
         if (wanted == null || wanted.getItem() == null) return false;
