@@ -102,7 +102,15 @@ public final class NEIIngredientDecorator implements ICraftingHandler, IUsageHan
             ItemStack[] copies = new ItemStack[stack.items.length];
             for (int i = 0; i < copies.length; i++) {
                 ItemStack item = stack.items[i];
-                copies[i] = item == null || item.getItem() == null
+                // Isolation test: the four GT6 multitileentity variants below
+                // enqueue client sounds when the generic material resolver is
+                // invoked by NEI ingredient cycling. Keep the original preview
+                // stack untouched; do not alter recipes or machine outputs.
+                Object registryName = item == null || item.getItem() == null ? null
+                        : net.minecraft.item.Item.itemRegistry.getNameForObject(item.getItem());
+                boolean isolate = "gregtech:gt.multitileentity".equals(String.valueOf(registryName))
+                        && item.getItemDamage() >= 1001 && item.getItemDamage() <= 1004;
+                copies[i] = item == null || item.getItem() == null || isolate
                         ? item : RecipePreviewTags.copyWithMaterials(
                                 item, MaterialDefaultResolver.resolve(item));
             }
