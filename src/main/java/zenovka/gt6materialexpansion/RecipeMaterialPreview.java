@@ -63,15 +63,11 @@ public final class RecipeMaterialPreview {
             SoundQueueDiagnostic.report("crafting.resolve[" + index + "]", chosen, beforeResolve);
             if (!accumulate(totals, materials, 1)) return null;
 
-            int beforeContainer = SoundQueueDiagnostic.pending();
-            boolean hasContainer = chosen.getItem().hasContainerItem(chosen);
-            SoundQueueDiagnostic.report("crafting.hasContainer[" + index + "]", chosen, beforeContainer);
-            if (hasContainer) {
-                int beforeGetContainer = SoundQueueDiagnostic.pending();
-                ItemStack container = chosen.getItem().getContainerItem(chosen);
-                SoundQueueDiagnostic.report("crafting.getContainer[" + index + "]", chosen, beforeGetContainer);
-                if (container != null && !accumulate(totals, MaterialDefaultResolver.resolve(container), -1)) return null;
-            }
+            // NEI evaluates crafting previews on worker threads. Some GT6 item implementations
+            // have side effects in hasContainerItem/getContainerItem (including enqueuing
+            // client sounds), so never invoke these methods from the background preview.
+            // Conservatively omit container subtraction here; actual crafting remains unchanged.
+
         }
         return divided(totals, output.stackSize);
     }
