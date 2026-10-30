@@ -263,9 +263,14 @@ public final class MaterialDefaultResolver {
     }
 
     public static List<OreDictMaterialStack> resolve(ItemStack stack) {
-        List<OreDictMaterialStack> result = resolve(stack, new HashSet<String>(), 0);
-        if (result != null && !result.isEmpty()) return result;
-        return matter();
+        int soundQueueBefore = SoundQueueDiagnostic.pending();
+        try {
+            List<OreDictMaterialStack> result = resolve(stack, new HashSet<String>(), 0);
+            if (result != null && !result.isEmpty()) return result;
+            return matter();
+        } finally {
+            SoundQueueDiagnostic.report("MaterialDefaultResolver.resolve", stack, soundQueueBefore);
+        }
     }
 
     private static List<OreDictMaterialStack> resolve(ItemStack stack, Set<String> visiting, int depth) {
