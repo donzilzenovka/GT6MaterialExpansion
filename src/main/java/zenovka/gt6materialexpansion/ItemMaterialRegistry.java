@@ -36,12 +36,12 @@ public final class ItemMaterialRegistry {
         // Provisional Enderman head: seven units bone and two Ender Pearls (eyes).
         // Restrict this test to the base head metadata; do not affect other skull variants.
         assignEndermanHeadIfMissing();
-        registerVanillaDyes();
         ProduceItemAssociations.register();
         FloraMaterials.register(PlantMatter);
         FungalMaterials.register(Mycelium);
         MiscMaterials.register(Soil, PlantMatter, Mycelium, OrganicMatter, Fibre, Wool,
             ProduceMaterials.get("Cactus"), ProduceMaterials.get("Reed"));
+        registerSpecificDyes();
         BiologicalFibreMaterials.register(Keratin, Silk, Chitin, Cotton, Hemp, Flax, Fibre, Wool, stringIsCotton);
         // Vanilla torches are invariant, fuel-agnostic objects; no per-stack NBT.
         // Respect any composition another mod may have registered.
@@ -79,27 +79,23 @@ public final class ItemMaterialRegistry {
         overrideMeatItem("minecraft:fish", 1, SalmonRaw);
         overrideMeatItem("minecraft:cooked_fished", 1, SalmonCooked);
     }
-    /**
-     * Vanilla dye metadata follows GT6's DYE_INDEX order.
-     * Leave existing GT6 associations intact except ink sac (metadata 0),
-     * deliberately normalised to 1 U Black dye.
-     */
-    private static void registerVanillaDyes() {
-        OreDictMaterial[] colors = {
-            MT.Black, MT.Red, MT.Green, MT.Brown, MT.Blue, MT.Purple,
-            MT.Cyan, MT.LightGray, MT.Gray, MT.Pink, MT.Lime, MT.Yellow,
-            MT.LightBlue, MT.Magenta, MT.Orange, MT.White
+    /** Assign 1 U of colour only to actual dye items, not dye substitutes. */
+    private static void registerSpecificDyes() {
+        // Vanilla 1.7.10 dye metadata: 0 ink, 3 cocoa, 4 lapis, 15 bone meal.
+        // Those four retain their existing physical material associations.
+        int[] vanillaMetadata = {1, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
+        OreDictMaterial[] vanillaMaterials = {
+            MT.Red, MT.Green, MT.Purple, MT.Cyan, MT.LightGray, MT.Gray,
+            MT.Pink, MT.Lime, MT.Yellow, MT.LightBlue, MT.Magenta, MT.Orange
         };
-        for (int metadata = 0; metadata < colors.length; metadata++) {
-            ItemStack dye = new ItemStack(Items.dye, 1, metadata);
-            if (metadata == 0) {
-                boolean accepted = OreDictManager.INSTANCE.setItemData(
-                    dye, new OreDictItemData(MT.Black, U));
-                FMLLog.info("[GT6MaterialExpansion] Ink sac -> 1 U Black override accepted=%s", accepted);
-            } else if (OreDictManager.INSTANCE.getItemData(dye) == null) {
-                OreDictManager.INSTANCE.addItemData(dye, new OreDictItemData(colors[metadata], U));
-            }
-        }
+        for (int i = 0; i < vanillaMetadata.length; i++)
+            assignIfMissing("minecraft:dye", vanillaMetadata[i], vanillaMaterials[i], U);
+
+        // Et Futurum Requiem's separate dyes (white, blue, brown, black).
+        assignIfMissing("etfuturum:dye", 0, MT.White, U);
+        assignIfMissing("etfuturum:dye", 1, MT.Blue, U);
+        assignIfMissing("etfuturum:dye", 2, MT.Brown, U);
+        assignIfMissing("etfuturum:dye", 3, MT.Black, U);
     }
 
     private static void assignEndermanHeadIfMissing() {
