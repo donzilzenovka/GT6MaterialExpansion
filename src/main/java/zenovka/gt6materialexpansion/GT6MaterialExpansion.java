@@ -28,7 +28,7 @@ import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.MinecraftForge;
 
 /**
- * Initial GT6 6.17.06 material-data experiment.
+ * GT6 material associations and recipe-derived composition integration.
  * No blocks, items, recipes, or ore dictionary entries are registered here.
  */
 @Mod(modid = "gt6materialexpansion", name = "GT6 Material Expansion",
@@ -95,9 +95,6 @@ public final class GT6MaterialExpansion {
 
     @EventHandler
     public void serverStarted(FMLServerStartedEvent event) {
-        RecipeDiagnostics.dump();
-        PotatoRecipeDiagnostic.dump();
-        MiscMaterials.diagnoseMinecarts();
         registerMeatProcessing("minecraft:chicken", ChickenRaw, ChickenCooked);
         registerMeatProcessing("minecraft:beef", BeefRaw, BeefCooked);
         registerMeatProcessing("minecraft:porkchop", PorkRaw, PorkCooked);
@@ -176,43 +173,6 @@ public final class GT6MaterialExpansion {
         } else {
             FMLLog.info("[GT6MaterialExpansion] %s mortar expected one generic recipe, found %d; unchanged", registryName, matches);
         }
-    }
-
-    /** Read-only diagnostics for generated dust and shredder pulverisation targets. */
-    private static void diagnoseChickenProcessing() {
-        ItemStack dust = OM.dust(ChickenRaw, 2 * U);
-        FMLLog.info("[GT6MaterialExpansion] Chicken processing: dust(ChickenRaw, 2U)=%s",
-            describeStack(dust));
-        FMLLog.info("[GT6MaterialExpansion] Chicken processing: pulver target=%s, amount=%d",
-            String.valueOf(ChickenRaw.mTargetPulver.mMaterial),
-            ChickenRaw.mTargetPulver.mAmount);
-        FMLLog.info("[GT6MaterialExpansion] Chicken processing: bone pulver target=%s, amount=%d",
-            String.valueOf(MT.Bone.mTargetPulver.mMaterial),
-            MT.Bone.mTargetPulver.mAmount);
-        Object item = Item.itemRegistry.getObject("minecraft:chicken");
-        if (item instanceof Item) {
-            OreDictItemData data = OreDictManager.INSTANCE.getItemData(
-                new ItemStack((Item)item, 1, 0));
-            if (data != null) {
-                for (OreDictMaterialStack component : data.getAllMaterialStacks()) {
-                    FMLLog.info("[GT6MaterialExpansion] Chicken processing: component=%s amount=%d pulver=%s ratio=%d",
-                        String.valueOf(component.mMaterial), component.mAmount,
-                        String.valueOf(component.mMaterial.mTargetPulver.mMaterial),
-                        component.mMaterial.mTargetPulver.mAmount);
-                }
-            }
-        }
-    }
-
-    private static String describeStack(ItemStack stack) {
-        if (stack == null) return "<NULL>";
-        return String.valueOf(stack.getItem()) + " x" + stack.stackSize
-            + " meta=" + stack.getItemDamage();
-    }
-
-    private static String describeMaterial(OreDictItemData data) {
-        if (data == null || data.mMaterial == null) return "<none>";
-        return String.valueOf(data.mMaterial.mMaterial) + " (" + data.mMaterial.mAmount + " units)";
     }
 
 }
