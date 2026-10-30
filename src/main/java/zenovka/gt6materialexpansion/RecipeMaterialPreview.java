@@ -33,6 +33,16 @@ public final class RecipeMaterialPreview {
      * Ore-dictionary alternatives use the first available stack for a canonical preview.
      */
     public static List<OreDictMaterialStack> forCrafting(IRecipe recipe) {
+        int soundQueueBefore = SoundQueueDiagnostic.pending();
+        try {
+            return forCraftingInspected(recipe);
+        } finally {
+            SoundQueueDiagnostic.report("RecipeMaterialPreview.forCrafting",
+                    recipe == null ? null : recipe.getRecipeOutput(), soundQueueBefore);
+        }
+    }
+
+    private static List<OreDictMaterialStack> forCraftingInspected(IRecipe recipe) {
         if (recipe == null) return null;
         ItemStack output = recipe.getRecipeOutput();
         if (output == null || output.stackSize <= 0) return null;
