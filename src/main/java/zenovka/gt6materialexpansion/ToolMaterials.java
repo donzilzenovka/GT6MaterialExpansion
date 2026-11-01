@@ -47,74 +47,19 @@ public final class ToolMaterials {
     @SubscribeEvent
     public void onCrafted(PlayerEvent.ItemCraftedEvent event) {
         ItemStack result = event.crafting;
-        if (result == null || event.craftMatrix == null) return;
+        if (result == null || event.craftMatrix == null
+                || !(result.getItem() instanceof MultiItemTool)) return;
         NBTTagCompound existing = result.getTagCompound();
-        boolean tool = result.getItem() instanceof MultiItemTool;
-        // A recycling tag alone must not prevent a newly crafted GT6 tool
-        // from receiving its immutable baseline. Existing baselines always win.
-        if (existing != null && (existing.hasKey(ORIGINAL_TAG)
-                || (!tool && existing.hasKey(RECYCLING_TAG)))) return;
-        // For ordinary items, respect GT6's existing material association (e.g. sticks).
-        // Tools retain their established recipe-derived original-material behaviour.
-        if (!tool) {
-            OreDictItemData outputData = OM.anydata(result);
-            if (outputData != null && !outputData.getAllMaterialStacks().isEmpty()) {
-                return;
-            }
-        }
+        if (existing != null && existing.hasKey(ORIGINAL_TAG)) return;
 
-        List<OreDictMaterialStack> components = CraftingMaterialResolver.resolveIngredients(event.craftMatrix, result.stackSize);
-        if (components == null || components.isEmpty()) {
-            return;
-        }
+        List<OreDictMaterialStack> components =
+            CraftingMaterialResolver.resolveIngredients(event.craftMatrix, result.stackSize);
+        if (components == null || components.isEmpty()) return;
 
         NBTTagCompound tag = existing == null ? new NBTTagCompound() : existing;
-        if (tool) {
-            OreDictMaterialStack.saveList(ORIGINAL_TAG, tag, components);
-            result.setTagCompound(tag);
-            synchronize(result);
-        } else {
-            OreDictMaterialStack.saveList(RECYCLING_TAG, tag, components);
-            result.setTagCompound(tag);
-        }
-    }
-
-
-    /**
-     * Populate the live crafting result, without changing the recipe or GT6's
-     * existing material associations. The same resolver handles pickup.
-     * Both logical sides update their local preview; the server is authoritative.
-     */
-    @SubscribeEvent
-    public void onCraftPreview(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-        Container container = event.player.openContainer;
-        if (container == null || container.inventorySlots.isEmpty()) return;
-        Object first = container.inventorySlots.get(0);
-        if (!(first instanceof SlotCrafting)) return;
-        IInventory grid;
-        if (container instanceof ContainerWorkbench) {
-            grid = ((ContainerWorkbench) container).craftMatrix;
-        } else if (container instanceof ContainerPlayer) {
-            grid = ((ContainerPlayer) container).craftMatrix;
-        } else {
-            return; // Do not guess at third-party container internals.
-        }
-        Slot outputSlot = (Slot) first;
-        ItemStack result = outputSlot.getStack();
-        if (result == null || result.getItem() == null) return;
-        if (result.getItem() instanceof MultiItemTool) return; // Existing tool path unchanged.
-        NBTTagCompound existing = result.getTagCompound();
-        if (existing != null && (existing.hasKey(RECYCLING_TAG) || existing.hasKey(ORIGINAL_TAG))) return;
-        OreDictItemData outputData = OM.anydata(result);
-        if (outputData != null && !outputData.getAllMaterialStacks().isEmpty()) return;
-
-        List<OreDictMaterialStack> components = CraftingMaterialResolver.resolveIngredients(grid, result.stackSize);
-        if (components == null || components.isEmpty()) return;
-        NBTTagCompound tag = existing == null ? new NBTTagCompound() : (NBTTagCompound) existing.copy();
-        OreDictMaterialStack.saveList(RECYCLING_TAG, tag, components);
+        OreDictMaterialStack.saveList(ORIGINAL_TAG, tag, components);
         result.setTagCompound(tag);
-        if (!event.player.worldObj.isRemote) container.detectAndSendChanges();
+        synchronize(result);
     }
 
     /** Refresh player-held tools on the server; no global item registry or coremod. */
