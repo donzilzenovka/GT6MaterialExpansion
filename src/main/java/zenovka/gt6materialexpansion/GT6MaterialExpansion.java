@@ -70,39 +70,9 @@ public final class GT6MaterialExpansion {
 
     @EventHandler
     public void postInit(FMLPostInitializationEvent event) {
-        MaterialDensityRegistry.apply();
-        ItemMaterialRegistry.register();
-    }
-
-    @EventHandler
-    public void loadComplete(FMLLoadCompleteEvent event) {
-        if (event.getSide().isClient() && Loader.isModLoaded("NotEnoughItems")) {
-            try {
-                Class.forName("zenovka.gt6materialexpansion.NEIMaterialPreview")
-                    .getMethod("install").invoke(null);
-                Class.forName("zenovka.gt6materialexpansion.NEICraftingMaterialPreview")
-                    .getMethod("install").invoke(null);
-                Class.forName("zenovka.gt6materialexpansion.NEIFurnaceMaterialPreview")
-                    .getMethod("install").invoke(null);
-                if (Loader.isModLoaded("EnderIO"))
-                    Class.forName("zenovka.gt6materialexpansion.NEIIngredientDecorator")
-                        .getMethod("install").invoke(null);
-            } catch (Throwable error) {
-                FMLLog.warning("[GT6MaterialExpansion] NEI crafting material integration failed: %s", error);
-            }
-        }
-    }
-
-    @EventHandler
-    public void serverStarted(FMLServerStartedEvent event) {
-        registerMeatProcessing("minecraft:chicken", ChickenRaw, ChickenCooked);
-        registerMeatProcessing("minecraft:beef", BeefRaw, BeefCooked);
-        registerMeatProcessing("minecraft:porkchop", PorkRaw, PorkCooked);
-        SpeciesFoodRecipes.register(MuttonRaw, MuttonCooked, MT.MeatRotten);
-        overrideMeatMortarOutput("gregtech:gt.multiitem.food", 1400, MuttonRaw);
-        overrideMeatMortarOutput("gregtech:gt.multiitem.food", 1210, BeefRaw);
-        registerFishProcessing(0, CodRaw, CodCooked);
-        registerFishProcessing(1, SalmonRaw, SalmonCooked);
+        // Isolation build: retain GT6 material definitions for existing tool NBT.
+        // Do not register item associations, machine adapters, or recipe hooks.
+        ToolMaterials.register();
     }
 
     private static void registerMeatProcessing(String itemName, OreDictMaterial raw, OreDictMaterial cooked) {
