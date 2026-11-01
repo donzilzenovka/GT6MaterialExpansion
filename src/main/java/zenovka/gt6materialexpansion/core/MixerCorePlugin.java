@@ -7,7 +7,7 @@ import java.util.Map;
 @IFMLLoadingPlugin.TransformerExclusions({"zenovka.gt6materialexpansion.core."})
 public final class MixerCorePlugin implements IFMLLoadingPlugin {
     @Override public String[] getASMTransformerClass() {
-        return new String[]{"zenovka.gt6materialexpansion.core.MixerTransformer"};
+        return new String[0]; // Isolation build: no crafting, furnace, GT6 or Ender IO bytecode patches.
     }
     @Override public String getModContainerClass() { return null; }
     @Override public String getSetupClass() { return null; }
